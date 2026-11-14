@@ -79,13 +79,15 @@ export function record(progress, unitId, key, correct, skill, today = dateStr())
   return r;
 }
 
-// How much an item needs practice right now (higher = sooner). Never-practiced first, then not yet
-// succeeded at this skill, then recent mistakes, then the longest-unseen; with a bit of randomness.
+// How much an item needs practice right now (higher = sooner). Never-practiced first, then never tried
+// with this skill, then missed at this skill, then recent mistakes, then the longest-unseen; with a bit
+// of randomness (jitter < tier gap, so every item gets its first try within ceil(items / n) rounds).
 export function weakness(progress, unit, item, skill, { today = dateStr(), rand = Math.random } = {}) {
   const r = getItem(progress, unit.id, itemKeyOf(unit, item));
   let score;
   if (!practiced(r)) score = 1000;
-  else if (skill && r.skills[skill] !== true) score = 700;
+  else if (skill && r.skills[skill] === undefined) score = 850; // never tried with this skill
+  else if (skill && r.skills[skill] !== true) score = 700;      // tried and missed
   else if (r.box === 0) score = 500;
   else {
     const age = r.last ? Math.max(0, daysBetween(r.last, today)) : 30;

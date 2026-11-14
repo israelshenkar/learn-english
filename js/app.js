@@ -243,8 +243,11 @@ function playScreen(user, unitId, gameId) {
     },
     onCleanup: fn => cleanups.push(fn),
     // Per-item results + adaptive item choice (js/mastery.js).
+    // Recorded in memory only (no save per answer): finish() saves the round, and leaving mid-round
+    // is saved by the pagehide flush or the next update.
     recordItem(itemKey, correct, skill, forUnit = unit.id) {
-      store.update(pr => mastery.record(pr, forUnit, itemKey, correct, skill));
+      const pr = store.currentUser()?.progress;
+      if (pr) mastery.record(pr, forUnit, itemKey, correct, skill);
     },
     pickItems: (pool, n, skill) => mastery.pickItems(store.currentUser().progress, unit, pool, n, skill),
     finish(res) {
