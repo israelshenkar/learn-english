@@ -29,7 +29,7 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 
 1. Push this repo to GitHub.
 2. In the repo, go to **Settings → Pages**. Set the source to **Deploy from a branch** and pick `main` with `/ (root)`.
-3. The site is served at `https://<user>.github.io/<repo>/`. All paths are relative and routing uses `#/`, so no extra configuration is needed.
+3. The site is served at **https://learn-english.shenkar.site**. The `CNAME` file sets this custom domain. The Cloudflare DNS record is a CNAME from `learn-english` to `israelshenkar.github.io`, set to DNS only. All paths are relative and routing uses `#/`, so no extra configuration is needed.
 
 ## Firebase backend
 
@@ -37,7 +37,7 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 - **How nicknames sign in:** each nickname maps to a made-up address, `p<hash>@players.my-english-notebook.invalid`, used with Email/Password sign-in. No real email is used, so **there is no password reset**. If a player forgets their password, the only option is to delete the account under Authentication → Users and register again, which loses their progress.
 - **Data:** `users/{uid}` holds a player's full progress and only that player can access it. `leaderboard/{uid}` holds the nickname, avatar, points and trophy count; any signed-in player can read it.
 - **Rules:** if you change `firestore.rules`, paste it into Firestore → Rules in the console and press Publish.
-- **Hosting:** `israelshenkar.github.io` is listed under Authentication → Settings → Authorized domains.
+- **Hosting:** `learn-english.shenkar.site` and `israelshenkar.github.io` are listed under Authentication → Settings → Authorized domains.
 
 ## Code map
 
