@@ -12,7 +12,9 @@ A game-style site for Hebrew speakers learning English from zero. It is fully st
 
 - **Scoring:** 10 points per correct answer, +5 when on a streak of 3 or more. Each round earns 1–3 stars.
 - **Progression:** a unit unlocks once you earn half the stars of the unit before it. Bonus games don't count toward unlocking.
-- **Trophies:** 19 trophies, defined in `js/trophies.js`.
+- **Trophies:** 22 trophies, defined in `js/trophies.js`.
+- **Daily goal & streak:** 3 rounds a day is the daily goal (ring on the home screen and around the 🔥 in the top bar). The 🔥 day streak counts days the goal was met; a streak freeze from the shop covers a missed day.
+- **Coins & shop:** 1 🪙 per star earned in a round, +10 for meeting the daily goal. The shop (`#/shop`) sells extra avatars, notebook themes and streak freezes. Logic lives in `js/rewards.js` and `js/shop.js`.
 - **Accounts:** a nickname, an avatar and a password of at least 6 characters, with no email needed. Progress is saved to Firebase, so a player can continue on any device.
 - **Leaderboard:** the top 20 players by points, visible only to signed-in players.
 - **Audio:** pronunciation uses the browser's built-in English voice (`speechSynthesis`). "Say it" uses speech recognition, which Chrome, Edge and Android support.
@@ -47,6 +49,8 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 - `firestore.rules`: a copy of the security rules published in the Firebase console.
 - `js/games.js`: the mini-games.
 - `js/trophies.js`: trophy rules.
+- `js/rewards.js`: daily goal, day streak, coins, streak freezes and notebook themes.
+- `js/shop.js`: the shop screen (`#/shop`).
 - `js/app.js`: screens and routing.
 - `js/speech.js`: text-to-speech and speech recognition.
 - `js/ui.js`: DOM helper, sound effects, confetti.

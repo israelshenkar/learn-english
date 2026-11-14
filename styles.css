@@ -437,3 +437,132 @@ a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .linkish { font: inherit; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .btn:disabled { opacity: .6; cursor: wait; }
+
+/* ==========================================================================
+   Engagement: daily goal ring, streak week, coins & shop, notebook themes
+   (js/rewards.js, js/shop.js)
+   ========================================================================== */
+
+/* ---------- notebook themes: custom-property overrides ---------- */
+[data-theme="classic"] { --paper: #fbf6ea; --paper-2: #fffdf7; --rule: #d7e4f3; --margin: #f0a39b; --ink: #1d2a5b; --ink-soft: #55608a; --yellow: #ffd84d; }
+[data-theme="mint"]   { --paper: #eaf7ef; --paper-2: #f7fdf9; --rule: #c6e6d2; --margin: #7fcc9e; --ink: #12483a; --ink-soft: #4b7a6a; --yellow: #a8ecc4; }
+[data-theme="sky"]    { --paper: #ecf3fd; --paper-2: #f8fbff; --rule: #c9d9f3; --margin: #8eb1ea; --ink: #182e6b; --ink-soft: #52639a; --yellow: #a9dcff; }
+[data-theme="bubble"] { --paper: #fdeef4; --paper-2: #fff8fb; --rule: #f3cfdf; --margin: #e78bb3; --ink: #4b1c50; --ink-soft: #81577f; --yellow: #ffc4de; }
+[data-theme="kraft"]  { --paper: #f2e4ca; --paper-2: #fbf4e6; --rule: #e0cba3; --margin: #d4835a; --ink: #3c2a18; --ink-soft: #725a40; --yellow: #ffbf5e; }
+
+/* ---------- goal ring (conic progress around an emoji / count) ---------- */
+.goal-ring {
+  --pct: 0; --size: 30px; width: var(--size); height: var(--size); border-radius: 50%; flex: none;
+  display: inline-grid; place-items: center; padding: 3px; vertical-align: middle;
+  background: conic-gradient(var(--green) calc(var(--pct) * 1%), color-mix(in srgb, var(--ink) 14%, transparent) 0);
+}
+.goal-ring-in { width: 100%; height: 100%; border-radius: 50%; background: #fff; display: grid; place-items: center; line-height: 1; }
+.goal-ring.mini { --size: 26px; padding: 2.5px; font-size: .8rem; }
+.goal-ring.big { --size: 92px; padding: 9px; font-size: 1.5rem; }
+.goal-ring.big .goal-ring-in { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent); }
+.goal-ring.big b { font-size: 2rem; }
+.goal-ring.full { background: conic-gradient(var(--green) 100%, transparent 0); }
+.goal-ring.big.full .goal-ring-in { font-size: 2.6rem; animation: pop .6s; }
+.streak-chip { display: inline-flex; align-items: center; gap: 4px; padding-inline-start: .2em; }
+.coin-chip b { color: #a87d00; }
+
+/* ---------- home: today card ---------- */
+.today-card { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; margin: 14px 0 6px; position: relative; }
+.today-card::before { /* washi tape */
+  content: ''; position: absolute; top: -10px; inset-inline-start: 26px; width: 70px; height: 20px; rotate: -4deg;
+  background: color-mix(in srgb, var(--green) 45%, transparent); border-radius: 2px;
+}
+.today-card.met { background: color-mix(in srgb, var(--green) 9%, var(--paper-2)); }
+.today-ring { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.today-ring small { color: var(--ink-soft); font-size: .8rem; }
+.today-main h2 { margin: 0 0 .1em; font-size: 1.2rem; }
+.today-msg { margin: 0 0 8px; color: var(--ink-soft); font-size: .95rem; }
+.today-card.met .today-msg { color: #157a48; font-weight: 600; }
+.week { list-style: none; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 0; margin: 0; }
+.wday { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .78rem; color: var(--ink-soft); }
+.wday-mark {
+  width: 100%; max-width: 40px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px;
+  border: 2px dashed color-mix(in srgb, var(--ink) 25%, transparent); font-weight: 700; font-size: .9rem; color: var(--ink);
+}
+.wday.done .wday-mark { background: var(--green); border: 2px solid #157a48; color: #fff; font-size: 1.1rem; }
+.wday.frozen .wday-mark { background: #dff1fb; border: 2px solid var(--blue); }
+.wday.missed .wday-mark { color: color-mix(in srgb, var(--ink) 35%, transparent); }
+.wday.today .wday-mark { border: 2.5px solid var(--ink); background: #fff; font-size: .78rem; }
+.wday.is-today .wday-name { color: var(--ink); font-weight: 700; }
+.today-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.streak-big { font-weight: 600; }
+.streak-big b { font-size: 1.3rem; }
+.freeze-held { color: var(--blue); font-weight: 600; }
+.shop-btn { min-height: 40px; padding: .3em 1em; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); }
+@media (max-width: 520px) {
+  .today-card { grid-template-columns: 1fr; justify-items: stretch; text-align: center; padding: 14px; }
+  .today-ring { flex-direction: row; justify-content: center; }
+  .goal-ring.big { --size: 76px; padding: 8px; }
+  .today-foot { justify-content: center; }
+}
+
+/* ---------- results overlay: coins & goal ---------- */
+.coins-won { font-size: 1.15rem; font-weight: 700; color: #a87d00; margin: 0; }
+.goal-done { font-weight: 700; background: #c9f0da; border-radius: 10px; padding: 4px 8px; animation: pop .5s .4s both; }
+.goal-left { color: var(--ink-soft); font-size: .95rem; }
+
+/* ---------- shop ---------- */
+.shop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.shop-head h1 { margin-bottom: 0; }
+.wallet {
+  font-size: 1.5rem; font-weight: 700; background: #fff; border: 2.5px solid var(--ink); border-radius: 999px;
+  padding: .15em .9em; box-shadow: 0 3px 0 var(--ink); white-space: nowrap;
+}
+.wallet b { color: #a87d00; }
+.shop section { margin-top: 18px; }
+.shop-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+.shop-grid.themes { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.shop-item {
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
+.shop-item.on { background: color-mix(in srgb, var(--yellow) 45%, #fff); }
+.shop-avatar { font-size: 2.4rem; line-height: 1.1; }
+.shop-item:not(.owned) .shop-avatar { filter: saturate(.85); }
+.shop-item .btn { min-height: 38px; padding: .2em .8em; font-size: .9rem; box-shadow: 0 3px 0 var(--ink); width: 100%; }
+.shop-item .btn:disabled { cursor: not-allowed; opacity: .45; }
+.shop-item .btn.sure { animation: pop .3s; }
+.shop-item .btn.equip { background: transparent; border-style: dashed; box-shadow: none; }
+.tag { font-size: .85rem; font-weight: 700; color: #157a48; min-height: 38px; display: grid; place-items: center; }
+.theme-swatch {
+  width: 100%; height: 72px; border-radius: 10px; border: 2px solid var(--ink); position: relative; overflow: hidden;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(to left, transparent 14px, var(--margin) 14px, var(--margin) 16px, transparent 16px),
+    repeating-linear-gradient(to bottom, transparent 0 15px, var(--rule) 15px 16px);
+}
+.sw-mark {
+  position: absolute; top: 10px; inset-inline-end: 26px; width: 34px; height: 34px; border-radius: 8px; rotate: -6deg;
+  background: var(--yellow); border: 2px solid var(--ink); color: var(--ink); display: grid; place-items: center;
+  font-family: var(--letter); font-weight: 700; font-size: .95rem;
+}
+.sw-btn { position: absolute; bottom: 10px; inset-inline-start: 12px; width: 44px; height: 14px; border-radius: 999px; background: var(--ink); }
+.freeze-item { flex-direction: row; text-align: start; max-width: 520px; gap: 12px; padding: 12px 14px; }
+.freeze-item .freeze-text { flex: 1; display: flex; flex-direction: column; }
+.freeze-item .freeze-text small { color: var(--ink-soft); }
+.freeze-item .btn, .freeze-item .tag { width: auto; flex: none; min-width: 90px; }
+@media (max-width: 520px) {
+  .shop-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .shop-grid .shop-item { padding: 8px 4px; border-radius: 14px; }
+  .shop-grid .shop-avatar { font-size: 2rem; }
+  .shop-grid .btn, .shop-grid .tag { font-size: .8rem; padding: .2em .3em; min-height: 34px; }
+  .shop-grid.themes { grid-template-columns: 1fr 1fr; }
+  .wallet { font-size: 1.2rem; }
+}
+/* the top bar holds one more chip (coins) – keep it on one line on phones */
+@media (max-width: 420px) {
+  .topbar { gap: 4px; }
+  .chips { gap: 4px; }
+  .chip { padding: .1em .38em; font-size: .8rem; }
+  .goal-ring.mini { --size: 22px; padding: 2px; font-size: .7rem; }
+  .icon-btn { width: 34px; height: 34px; font-size: 1rem; }
+  .avatar-btn { width: 40px; height: 40px; font-size: 1.3rem; }
+  .brand-mark, .back { width: 40px; height: 40px; }
+  .brand-mark { font-size: 1.15rem; }
+}
+@media (max-width: 370px) { .topbar .brand { display: none; } .chips { gap: 3px; } .chip { padding: .1em .3em; } }

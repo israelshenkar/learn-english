@@ -4,6 +4,8 @@ import { TROPHIES, awardTrophies } from './trophies.js';
 import { runGame } from './games.js';
 import { h, en, toast, confetti, starsRow, sfx } from './ui.js';
 import { canSpeak } from './speech.js';
+import * as rewards from './rewards.js';
+import { shopScreen } from './shop.js';
 
 const app = document.getElementById('app');
 let cleanups = [];
@@ -17,10 +19,13 @@ function render() {
   const user = store.currentUser();
   const hash = location.hash || '#/';
   let m;
+  rewards.applyTheme(user);
   if (!user) return authScreen();
+  rewards.dailyCheck(user);
   if ((m = hash.match(/^#\/unit\/([\w-]+)$/))) return unitScreen(user, m[1]);
   if ((m = hash.match(/^#\/play\/([\w-]+)\/(\w+)$/))) return playScreen(user, m[1], m[2]);
   if (hash === '#/trophies') return trophiesScreen(user);
+  if (hash === '#/shop') return shopScreen(user, { mount, topbar, announceTrophies });
   return homeScreen(user);
 }
 
@@ -37,6 +42,7 @@ const brand = () => h('div', { class: 'brand' },
 function topbar(user, { back } = {}) {
   const p = user.progress;
   const sound = store.settings.get().sound;
+  const [streakChip, coinChip] = rewards.topbarChips(p);
   const soundBtn = h('button', { class: 'icon-btn', type: 'button' });
   const paintSound = on => { soundBtn.textContent = on ? '🔔' : '🔕'; soundBtn.setAttribute('aria-label', on ? 'השתקת צלילים' : 'הפעלת צלילים'); };
   paintSound(sound);
@@ -46,8 +52,9 @@ function topbar(user, { back } = {}) {
     back ? h('a', { class: 'back', href: back, 'aria-label': 'חזרה' }, '→') : brand(),
     h('nav', { class: 'chips', 'aria-label': 'סטטוס' },
       h('span', { class: 'chip', title: 'נקודות' }, '⭐ ', h('b', {}, p.points.toLocaleString('he-IL'))),
-      h('span', { class: 'chip', title: 'ימים ברצף' }, '🔥 ', h('b', {}, store.dayStreak(p))),
+      streakChip,
       h('a', { class: 'chip link', href: '#/trophies', title: 'גביעים' }, '🏆 ', h('b', {}, Object.keys(p.trophies).length)),
+      coinChip,
       soundBtn,
       h('button', { class: 'avatar-btn', type: 'button', 'aria-label': `${user.nick} – יציאה`, title: 'יציאה',
         onclick: async () => { if (confirm(`לצאת מהפרופיל של ${user.nick}?`)) { await store.logout(); go('#/'); } } }, user.avatar)));
@@ -165,6 +172,7 @@ function homeScreen(user) {
     h('h1', { tabindex: -1 }, `שלום ${user.nick}! `, h('span', { class: 'wave' }, '👋')),
     h('p', { class: 'lead' }, 'בחרו שלב במסלול. כל שלב נפתח כשאוספים חצי מהכוכבים בשלב שלפניו.'),
     !canSpeak && h('p', { class: 'warn' }, 'הדפדפן הזה לא יכול להשמיע קול – חלק מהמשחקים יעבדו בלי שמע.'),
+    rewards.todayCard(p),
     h('ol', { class: 'path' }, UNITS.map((u, i) => {
       const open = store.unitUnlocked(p, i);
       const stars = store.unitStars(p, u), max = store.unitMaxStars(u);
@@ -241,8 +249,9 @@ function playScreen(user, unitId, gameId) {
       finished = true;
       const before = UNITS.filter((_, i) => store.unitUnlocked(store.currentUser().progress, i)).length;
       const prevBest = store.currentUser().progress.stars[key] || 0;
-      let fresh = [];
+      let fresh = [], reward = null;
       const u = store.update(pr => {
+        reward = rewards.onRound(pr, res);
         pr.stars[key] = Math.max(pr.stars[key] || 0, res.stars);
         pr.points += res.points;
         pr.stats.rounds++;
@@ -256,7 +265,7 @@ function playScreen(user, unitId, gameId) {
       });
       store.flush(); // save the round to the cloud right away
       const after = UNITS.filter((_, i) => store.unitUnlocked(u.progress, i)).length;
-      showResults(user, unit, gameId, res, { fresh, newUnit: after > before ? UNITS[after - 1] : null, prevBest });
+      showResults(user, unit, gameId, res, { fresh, newUnit: after > before ? UNITS[after - 1] : null, prevBest, reward });
     },
   };
   runGame(gameId, root, unit, api);
@@ -265,6 +274,7 @@ function playScreen(user, unitId, gameId) {
 function refreshChips(u) {
   const b = document.querySelector('.topbar .chip b');
   if (b && u) b.textContent = u.progress.points.toLocaleString('he-IL');
+  if (u) rewards.paintChips(u.progress);
 }
 
 function announceTrophies(list) {
@@ -276,7 +286,7 @@ function announceTrophies(list) {
   if (list.length) confetti(70);
 }
 
-function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest }) {
+function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest, reward }) {
   const games = unit.games;
   const nextGame = games[games.indexOf(gameId) + 1];
   const msg = res.stars === 3 ? 'מדהים!' : res.stars === 2 ? 'כל הכבוד!' : res.stars === 1 ? 'יפה, ממשיכים להתאמן!' : 'לא נורא – ננסה שוב?';
@@ -287,6 +297,7 @@ function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest }) {
       res.learn ? h('p', {}, 'הכרתם את כל הכרטיסים בשלב הזה!')
         : h('p', { class: 'score-line' }, `עניתם נכון על ${res.correct} מתוך ${res.total}`),
       res.points > 0 && h('p', { class: 'points-won' }, h('bdi', { dir: 'ltr' }, `+${res.points}`), ' נקודות ⭐'),
+      rewards.resultLines(reward),
       res.stars > prevBest && prevBest > 0 && h('p', { class: 'record' }, '🎖️ שיא אישי חדש!'),
       newUnit && h('p', { class: 'unlock' }, `🔓 נפתח שלב חדש: ${newUnit.title}`),
       fresh.length > 0 && h('div', { class: 'new-trophies' },
@@ -304,6 +315,7 @@ function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest }) {
   if (res.stars >= 2 || fresh.length || newUnit) { sfx.win(); confetti(res.stars === 3 ? 110 : 60); }
   refreshChips(store.currentUser());
   if (fresh.length) setTimeout(() => announceTrophies(fresh), 600);
+  if (reward?.goalMet) rewards.celebrateGoal();
 }
 
 // ---------------------------------------------------------------------------
