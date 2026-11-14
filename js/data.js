@@ -216,4 +216,11 @@ export const UNITS = [
   SENTENCE_UNIT,
 ];
 
-export const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐯', '🐨', '🐵', '🦄', '🐙', '🐢', '🦉', '🐳'];
+// Free avatars. The first FIRST_AVATARS show up front in the sign-up picker; the rest fold out.
+// Single-codepoint emoji only (the leaderboard and group rows keep the avatar as one short string).
+export const FIRST_AVATARS = 12;
+export const AVATARS = [
+  '🦊', '🐼', '🐸', '🦁', '🐯', '🐨', '🐵', '🦄', '🐙', '🐢', '🦉', '🐳',
+  '🐮', '🐷', '🐹', '🐭', '🐔', '🐤', '🦆', '🦜', '🦚', '🦢', '🐺', '🦝',
+  '🐴', '🦓', '🦒', '🐘', '🦛', '🦘', '🦦', '🦥', '🦀', '🐠', '🐊', '🦕',
+];

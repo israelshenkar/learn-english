@@ -170,6 +170,20 @@ a { color: inherit; }
   cursor: pointer; padding: 0;
 }
 .avatar-pick button.on { border-color: var(--ink); background: var(--yellow); transform: scale(1.08) rotate(-4deg); }
+.avatar-more { margin-top: 6px; }
+.avatar-more > summary {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: .4em;
+  font-weight: 600; color: var(--ink); padding: .3em .8em; border: 2px dashed var(--ink); border-radius: 999px;
+  min-height: 40px; user-select: none;
+}
+.avatar-more > summary::-webkit-details-marker { display: none; }
+.avatar-more > summary::after { content: '▾'; transition: transform .2s; }
+.avatar-more[open] > summary::after { transform: rotate(180deg); }
+.avatar-more > summary:hover { background: var(--yellow); }
+.avatar-more > summary:focus-visible { outline: 3px solid var(--blue, #4aa3df); outline-offset: 2px; }
+.avatar-more > .avatar-pick { margin-top: 8px; }
+.shop-free > summary { margin: 14px 0 10px; }
+@media (prefers-reduced-motion: reduce) { .avatar-more > summary::after { transition: none; } }
 
 /* ---------- home path ---------- */
 .home h1 .wave { display: inline-block; animation: wave 1.6s ease-in-out 2; transform-origin: 70% 80%; }

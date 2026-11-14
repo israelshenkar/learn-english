@@ -1,4 +1,4 @@
-import { UNITS, GAMES, AVATARS } from './data.js';
+import { UNITS, GAMES, AVATARS, FIRST_AVATARS } from './data.js';
 import * as store from './store.js';
 import { TROPHIES, awardTrophies } from './trophies.js';
 import { runGame } from './games.js';
@@ -143,20 +143,29 @@ function authScreen() {
   }
 
   function showRegister() {
-    let avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+    // Start on a random avatar from the visible rows, so the chosen one is never hidden in the folded part.
+    let avatar = AVATARS[Math.floor(Math.random() * FIRST_AVATARS)];
     const err = h('p', { class: 'error', role: 'alert' });
     const nick = h('input', { id: 'nick', type: 'text', maxlength: 16, required: true, autocomplete: 'username',
       placeholder: 'למשל: נועה' });
     const pw = passwordInput('newpw', 'new-password');
-    const avatars = h('div', { class: 'avatar-pick', role: 'radiogroup', 'aria-label': 'בחירת דמות' },
-      AVATARS.map(a => {
-        const b = h('button', { type: 'button', role: 'radio', 'aria-checked': String(a === avatar), class: a === avatar ? 'on' : '' }, a);
-        b.addEventListener('click', () => {
-          avatar = a;
-          avatars.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
-        });
-        return b;
-      }));
+    const pickBtn = a => {
+      const b = h('button', { type: 'button', role: 'radio', 'aria-checked': String(a === avatar), 'aria-label': a, class: a === avatar ? 'on' : '' }, a);
+      b.addEventListener('click', () => {
+        avatar = a;
+        avatars.querySelectorAll('.avatar-pick button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
+      });
+      return b;
+    };
+    const moreCount = AVATARS.length - FIRST_AVATARS;
+    const moreLabel = h('span', {}, `עוד ${moreCount} דמויות`);
+    const more = h('details', { class: 'avatar-more' },
+      h('summary', {}, moreLabel),
+      h('div', { class: 'avatar-pick' }, AVATARS.slice(FIRST_AVATARS).map(pickBtn)));
+    more.addEventListener('toggle', () => { moreLabel.textContent = more.open ? 'פחות דמויות' : `עוד ${moreCount} דמויות`; });
+    const avatars = h('div', { role: 'radiogroup', 'aria-label': 'בחירת דמות' },
+      h('div', { class: 'avatar-pick' }, AVATARS.slice(0, FIRST_AVATARS).map(pickBtn)),
+      more);
     const submit = h('button', { class: 'btn primary', type: 'submit' }, 'יוצאים לדרך! 🚀');
     const form = h('form', { class: 'form' },
       h('h2', {}, 'נרשמים בקלות'),

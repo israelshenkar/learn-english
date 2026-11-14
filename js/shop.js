@@ -17,6 +17,7 @@ export function shopScreen(user, { mount, topbar, announceTrophies }) {
     body));
 
   let armed = null; // item id waiting for a second tap ("בטוח?")
+  let freeOpen = false; // the folded "free avatars" list stays open across redraws
 
   function draw() {
     const p = ensure(store.currentUser().progress);
@@ -33,15 +34,20 @@ export function shopScreen(user, { mount, topbar, announceTrophies }) {
       }, sure ? 'בטוח? ✓' : can ? `🪙 ${item.price}` : `🔒 ${item.price}`);
     };
 
-    const avatarItems = [...SHOP_AVATARS, ...AVATARS.map(emoji => ({ id: `avatar:${emoji}`, kind: 'avatar', emoji, price: 0 }))];
-    const avatars = h('ul', { class: 'shop-grid avatars' }, avatarItems.map(item => {
+    const avatarItem = item => {
       const have = owns(p, item.id), on = me === item.emoji;
       return h('li', { class: `shop-item ${have ? 'owned' : ''} ${on ? 'on' : ''}` },
         h('span', { class: 'shop-avatar', 'aria-hidden': 'true' }, item.emoji),
         on ? h('span', { class: 'tag' }, '✓ שלי')
           : have ? h('button', { class: 'btn equip', type: 'button', 'aria-label': `לבחור ${item.emoji}`, onclick: () => equipAvatar(item.emoji) }, 'בחירה')
             : priceBtn(item));
-    }));
+    };
+    const freeItems = AVATARS.map(emoji => ({ id: `avatar:${emoji}`, kind: 'avatar', emoji, price: 0 }));
+    const free = h('details', { class: 'avatar-more shop-free', open: freeOpen },
+      h('summary', {}, `דמויות חינם (${freeItems.length})`),
+      h('ul', { class: 'shop-grid avatars' }, freeItems.map(avatarItem)));
+    free.addEventListener('toggle', () => { freeOpen = free.open; });
+    const avatars = h('div', {}, h('ul', { class: 'shop-grid avatars' }, SHOP_AVATARS.map(avatarItem)), free);
 
     const themes = h('ul', { class: 'shop-grid themes' }, THEMES.map(item => {
       const have = owns(p, item.id), on = p.theme === item.key;
