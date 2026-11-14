@@ -79,7 +79,7 @@ export function onRound(p, res) {
 const dateStr = d => d.toLocaleDateString('en-CA');
 
 // A held streak freeze covers missed days (up to the number held) so the streak survives.
-// Returns true if it changed anything (call inside store.update()).
+// Returns how many days it covered (call inside store.update()).
 export function useFreezes(p) {
   ensure(p);
   if (!p.freezes || !p.days.length) return false;
