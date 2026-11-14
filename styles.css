@@ -437,3 +437,65 @@ a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .linkish { font: inherit; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .btn:disabled { opacity: .6; cursor: wait; }
+
+/* ==========================================================================
+   course content (course-content session): letter sounds, order game, sentences
+   ========================================================================== */
+.sound-btn { min-height: 40px; padding: .2em .9em; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); margin-inline-start: 6px; background: #e6f3fc; }
+.letter-chip.blending { background: var(--yellow) !important; transform: translateY(-6px) scale(1.08); transition: transform .12s; }
+.word-card .row { flex-wrap: wrap; }
+
+/* order game */
+.seq-row { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.seq-cell {
+  min-width: 64px; height: 72px; padding: 0 10px; display: inline-grid; place-items: center;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+}
+.seq-cell .glyph { font-size: 2.6rem; }
+.seq-cell.is-word { height: 60px; }
+.seq-cell .word { font-size: 1.3rem; }
+.seq-cell.blank { background: #fff3c4; border-style: dashed; box-shadow: none; font-size: 2rem; font-weight: 700; color: var(--red); }
+.seq-arrow { font-size: 2rem; font-weight: 700; color: var(--ink-soft); }
+.option .word { overflow-wrap: anywhere; }
+.slot.wide, .ltile.wide { width: auto; min-width: 120px; padding: 0 12px; font-size: 1.3rem; }
+.sort-slots .slot:not(.filled) { background: rgba(255, 255, 255, .6); }
+@media (max-width: 420px) {
+  .seq-cell { min-width: 52px; height: 62px; }
+  .seq-cell .glyph { font-size: 2.1rem; }
+  .seq-cell.is-word { height: 52px; padding: 0 6px; }
+  .seq-cell .word { font-size: 1.05rem; }
+  .slot.wide, .ltile.wide { min-width: 0; width: calc(50% - 8px); font-size: 1.15rem; }
+}
+
+/* sentences */
+.learn-grid.sentences { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.learn-grid.sentences .tile-word { font-size: .95rem; line-height: 1.25; }
+.sentence-words { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.word-chip {
+  font-family: var(--letter); font-weight: 700; font-size: 1.7rem; min-height: 56px; padding: 0 14px; cursor: pointer;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); color: var(--ink);
+}
+.word-chip:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+.sentence-text { font-size: 2.3rem; font-weight: 700; padding: 0 .3em; line-height: 1.3;
+  background: linear-gradient(transparent 62%, #fff3a8 62% 88%, transparent 88%); }
+.option.pictures .emoji { font-size: 2.6rem; letter-spacing: .05em; }
+.build-slots, .build-tiles { display: flex; justify-content: center; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+.wslot, .wtile {
+  font-family: var(--letter); font-weight: 700; font-size: 1.6rem; min-width: 78px; min-height: 58px; padding: 0 14px;
+  border-radius: 12px; cursor: pointer; color: var(--ink);
+}
+.wslot { background: transparent; border: 0; border-bottom: 4px solid var(--red); border-radius: 0; }
+.wslot.filled { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; animation: pop .25s; }
+.wslot.right { background: #c9f0da; border-color: #157a48; }
+.wslot.wrong { background: #fdd6d2; border-color: #a8352c; animation: shake .4s; }
+.wslot.reveal { background: #fff3c4; }
+.build-dot { font-family: var(--letter); font-size: 2.2rem; font-weight: 700; line-height: 1; }
+.wtile { background: #fff; border: 2.5px solid var(--ink); box-shadow: 0 4px 0 var(--ink); }
+.wtile:disabled { opacity: .2; box-shadow: none; cursor: default; }
+@media (max-width: 420px) {
+  .sentence-text { font-size: 1.8rem; }
+  .wslot, .wtile { font-size: 1.35rem; min-width: 64px; min-height: 52px; padding: 0 10px; }
+  .word-chip { font-size: 1.4rem; }
+}
+/* multi-emoji pictures ("🧒🐶") read left-to-right like the English sentence */
+.learn-grid.sentences .emoji, .sentence-card .emoji, .option.pictures .emoji, .prompt .emoji { direction: ltr; unicode-bidi: isolate; }

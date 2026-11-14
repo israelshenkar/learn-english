@@ -3,13 +3,15 @@
 import { LETTERS, CVC, LOOKALIKES } from './data.js';
 import { h, en, shuffle, sample, sfx } from './ui.js';
 import { speak, speakLetter, canListen, listenOnce } from './speech.js';
+import { playLetterSound, blendWord, stopSounds } from './phonics.js';
+import { EXTRA_GAME_FNS, sentenceCard } from './games-extra.js';
 
 export const itemKey = (unit, item) => unit.kind === 'letters' ? item.u : item.en;
 const itemsOf = unit => unit.kind === 'letters' ? LETTERS : unit.items;
 
 export const starsFor = ratio => ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
 
-function scorer() {
+export function scorer() {
   return {
     correct: 0, wrong: 0, streak: 0, best: 0, points: 0,
     hit() {
@@ -22,7 +24,7 @@ function scorer() {
 }
 
 // Progress bar + live score shown at the top of every round.
-function hud(total) {
+export function hud(total) {
   const fill = h('div', { class: 'hud-fill' });
   const pts = h('span', { class: 'hud-points' }, '0');
   const streak = h('span', { class: 'hud-streak' });
@@ -41,13 +43,13 @@ function hud(total) {
   };
 }
 
-const speakerBtn = (onclick, label = 'השמיעו שוב') =>
+export const speakerBtn = (onclick, label = 'השמיעו שוב') =>
   h('button', { class: 'speaker', type: 'button', 'aria-label': label, onclick }, '🔊');
 
 // ---------------------------------------------------------------------------
 // Generic multiple-choice runner
 // question = { prompt: () => Node, options: [{ label: Node, correct: bool }], onShow?, reveal? , layout? }
-function mcq(root, api, questions) {
+export function mcq(root, api, questions) {
   const s = scorer();
   const bar = hud(questions.length);
   const stage = h('div', { class: 'stage' });
@@ -98,6 +100,7 @@ function distractors(pool, target, n, keyFn) {
 function learn(root, unit, api) {
   const items = itemsOf(unit);
   const seen = new Set(api.seen());
+  api.onCleanup(stopSounds);
   const detail = h('div', { class: 'detail' });
   const counter = h('div', { class: 'learn-count' });
   const grid = h('div', { class: `learn-grid ${unit.kind}` });
@@ -138,7 +141,9 @@ function learn(root, unit, api) {
         h('div', { class: 'facts' },
           h('div', { class: 'fact' }, h('b', {}, 'שם האות: '), item.name,
             speakerBtn(() => speakLetter(item.u), 'השמיעו את שם האות')),
-          h('div', { class: 'fact' }, h('b', {}, 'הצליל: '), item.sound),
+          h('div', { class: 'fact' }, h('b', {}, 'הצליל: '), item.sound,
+            h('button', { class: 'btn sound-btn', type: 'button', 'aria-label': 'השמיעו את הצליל של האות',
+              onclick: () => playLetterSound(item.l, item.word) }, '🔉 הצליל')),
           h('div', { class: 'fact example' }, h('span', { class: 'emoji' }, item.emoji), ' ',
             en(item.word, 'word'), ` – ${item.he}`,
             speakerBtn(() => speak(item.word), 'השמיעו את המילה')))));
@@ -147,12 +152,19 @@ function learn(root, unit, api) {
       detail.replaceChildren(h('div', { class: 'word-card card-pop' },
         h('span', { class: 'emoji huge' }, item.emoji),
         h('div', { class: 'spelled', dir: 'ltr' }, [...item.en].map(c =>
-          h('button', { class: 'letter-chip', type: 'button', lang: 'en', 'aria-label': `האות ${c}`,
-            onclick: () => speakLetter(c) }, c))),
+          h('button', { class: 'letter-chip', type: 'button', lang: 'en', 'aria-label': `הצליל של ${c}`,
+            onclick: () => playLetterSound(c).then(ok => ok || speakLetter(c)) }, c))),
         h('div', { class: 'he' }, item.he),
         h('div', { class: 'row' },
+          h('button', { class: 'btn', type: 'button', onclick: e => {
+            const chips = [...e.currentTarget.closest('.word-card').querySelectorAll('.letter-chip')];
+            blendWord(item.en, i => chips.forEach((c, k) => c.classList.toggle('blending', k === i)));
+          } }, '🧩 צליל אחרי צליל'),
           h('button', { class: 'btn', type: 'button', onclick: () => speak(item.en, { rate: 0.55 }) }, '🐢 לאט'),
           h('button', { class: 'btn', type: 'button', onclick: () => speak(item.en) }, '🔊 רגיל'))));
+    } else if (unit.kind === 'sentences') {
+      speak(item.en, { rate: 0.75 });
+      detail.replaceChildren(sentenceCard(item));
     } else {
       speak(item.en);
       detail.replaceChildren(h('div', { class: 'word-card card-pop' },
@@ -593,7 +605,7 @@ function say(root, unit, api) {
 
 export function runGame(gameId, root, unit, api) {
   const table = {
-    learn, memory, trace, read, sounds, pick, spell, say,
+    learn, memory, trace, read, sounds, pick, spell, say, ...EXTRA_GAME_FNS,
     listen: unit.kind === 'letters' ? listenLetters : listenWords,
   };
   return table[gameId](root, unit, api);

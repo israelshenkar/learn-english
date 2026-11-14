@@ -6,16 +6,18 @@ A game-style site for Hebrew speakers learning English from zero. It is fully st
 
 | Unit | Games |
 |------|-------|
-| 1. האותיות (letters) | Learn (name, sound, example word) · Listen & pick · Upper/lower-case memory · Trace with a finger |
-| 2. קריאה ראשונה (first reading) | Learn short words letter by letter · Read & pick picture · Hear & pick the spelling among look-alikes · Spell with tiles |
-| 3–11. Daily words: greetings, numbers, colors, family, food, animals, body, home, actions | Learn · Picture → English · Listen → picture · Spell · Say it (bonus, microphone) |
+| 1. האותיות (letters) | Learn (name, recorded letter sound, example word) · Listen & pick · Upper/lower-case memory · Trace with a finger · ABC order (what comes after/before, missing letter, tap into order) |
+| 2. קריאה ראשונה (first reading) | Learn short words letter by letter, with "sound by sound" blending · Read & pick picture · Hear & pick the spelling among look-alikes · Spell with tiles |
+| 3–17. Daily words: greetings, numbers, colors, family, food, animals, body, home, actions, clothes, weather, school, days of the week, months, feelings | Learn · Picture → English · Listen → picture · Spell · Say it (bonus, microphone). Days and months play "in order" instead of Spell. |
+| 18. משפטים קצרים (short sentences) | Learn (tap each word) · Read a sentence & pick the picture · Listen → picture · Build the sentence from word tiles |
 
 - **Scoring:** 10 points per correct answer, +5 when on a streak of 3 or more. Each round earns 1–3 stars.
-- **Progression:** a unit unlocks once you earn half the stars of the unit before it. Bonus games don't count toward unlocking.
+- **Progression:** a unit unlocks once you earn half the stars of the unit before it. Bonus games don't count toward unlocking. A unit you already have stars in stays open, so adding a game to an earlier unit never re-locks a player.
 - **Trophies:** 19 trophies, defined in `js/trophies.js`.
 - **Accounts:** a nickname, an avatar and a password of at least 6 characters, with no email needed. Progress is saved to Firebase, so a player can continue on any device.
 - **Leaderboard:** the top 20 players by points, visible only to signed-in players.
 - **Audio:** pronunciation uses the browser's built-in English voice (`speechSynthesis`). "Say it" uses speech recognition, which Chrome, Edge and Android support.
+- **Letter sounds:** TTS can only say letter *names*, so the phonics sounds (/b/, /s/, short vowels…) are small clips in `audio/letters/` (about 55 KB in all). They were generated on a Mac from IPA with Apple's built-in voice by `tools/letter-sounds/build.py`. If a clip can't play, the game says the example word instead.
 
 ## Run locally
 
@@ -42,10 +44,13 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 ## Code map
 
 - `js/data.js`: all course content (letters, words, units, games). Edit it to add words or units.
+- `js/data-extra.js`: the later word units (clothes … feelings) and the short-sentences unit.
 - `js/store.js`: accounts and progress, cached in memory and saved to Firestore.
 - `js/cloud.js`: the Firebase config and SDK wrapper (Auth + Firestore, loaded from Google's CDN).
 - `firestore.rules`: a copy of the security rules published in the Firebase console.
 - `js/games.js`: the mini-games.
+- `js/games-extra.js`: the order game and the sentence games.
+- `js/phonics.js`: letter-sound playback and sound-by-sound blending.
 - `js/trophies.js`: trophy rules.
 - `js/app.js`: screens and routing.
 - `js/speech.js`: text-to-speech and speech recognition.
