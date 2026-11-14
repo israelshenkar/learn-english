@@ -438,7 +438,7 @@ a { color: inherit; }
 .linkish { font: inherit; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .btn:disabled { opacity: .6; cursor: wait; }
 
-/* ===================================================================
+/* ============================================================
    smart practice: daily review card + per-unit mastery grid (js/review.js)
    ========================================================================== */
 .review-card {
@@ -742,3 +742,16 @@ a.review-card:hover { transform: translateY(-3px); }
   .rp-table th, .rp-table td { white-space: normal; }
   a { color: inherit; text-decoration: none; }
 }
+=======
+/* ---------- polish & safety ---------- */
+a.avatar-btn { display: grid; place-items: center; text-decoration: none; flex: none; }
+.account { display: grid; gap: 18px; }
+.account .who { margin-top: 18px; }
+.recovery-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-weight: 700; font-size: clamp(1.15rem, 5.4vw, 1.6rem);
+  letter-spacing: .08em; text-align: center; background: #fff; border: 2.5px dashed var(--ink); border-radius: 12px;
+  padding: .5em .4em; margin: .6em 0; user-select: all; word-break: break-all;
+}
+.recovery-code .en { font-family: inherit; }
+.form input.code-input { text-align: left; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .06em; }
+.form input.code-input::placeholder { text-transform: none; letter-spacing: .02em; opacity: .5; }

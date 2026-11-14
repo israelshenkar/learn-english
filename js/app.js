@@ -11,6 +11,7 @@ import { shopScreen } from './shop.js';
 import { logRound } from './report.js';
 import { progressScreen } from './parent.js';
 import { groupsScreen, groupScreen, syncSummaries } from './groups.js';
+import { accountPage, recoveryOffer, recoverForm } from './account.js';
 
 const app = document.getElementById('app');
 let cleanups = [];
@@ -35,6 +36,7 @@ function render() {
   if (hash === '#/progress') return progressScreen(user, kit);
   if (hash === '#/groups') return groupsScreen(user, kit);
   if ((m = hash.match(/^#\/group\/([\w-]+)$/))) return groupScreen(user, m[1], kit);
+  if (hash === '#/account') return mount(topbar(user, { back: '#/' }), accountPage(user, { onLogout: async () => { await store.logout(); go('#/'); } }));
   return homeScreen(user);
 }
 
@@ -68,8 +70,7 @@ function topbar(user, { back } = {}) {
       h('a', { class: 'chip link', href: '#/trophies', title: 'גביעים' }, '🏆 ', h('b', {}, Object.keys(p.trophies).length)),
       coinChip,
       soundBtn,
-      h('button', { class: 'avatar-btn', type: 'button', 'aria-label': `${user.nick} – יציאה`, title: 'יציאה',
-        onclick: async () => { if (confirm(`לצאת מהפרופיל של ${user.nick}?`)) { await store.logout(); go('#/'); } } }, user.avatar)));
+      h('a', { class: 'avatar-btn', href: '#/account', 'aria-label': `${user.nick} – הפרופיל שלי`, title: 'הפרופיל שלי' }, user.avatar)));
 }
 
 // ---------------------------------------------------------------------------
@@ -124,8 +125,11 @@ function authScreen() {
       h('div', { class: 'row' },
         h('button', { class: 'btn ghost', type: 'button', onclick: recent.length ? showPicker : showRegister }, 'חזרה'),
         submit),
-      !u && h('p', { class: 'hint small' }, 'אין לך עדיין משתמש? ',
-        h('button', { class: 'linkish', type: 'button', onclick: showRegister }, 'נרשמים כאן')));
+      h('p', { class: 'hint small' },
+        h('button', { class: 'linkish', type: 'button', onclick: () => box.replaceChildren(
+          recoverForm({ nick: u?.nick || nick.value, onBack: () => showLogin(u), onDone: () => go('#/') })) }, 'שכחתי סיסמה'),
+        !u && ' · אין לך עדיין משתמש? ',
+        !u && h('button', { class: 'linkish', type: 'button', onclick: showRegister }, 'נרשמים כאן')));
     if (u) nick.hidden = true;
     form.addEventListener('submit', async e => {
       e.preventDefault();
@@ -168,7 +172,11 @@ function authScreen() {
       e.preventDefault();
       err.textContent = '';
       busy(submit, true, 'נרשמים…');
-      try { await store.register(nick.value, avatar, pw.value); sfx.win(); confetti(60); go('#/'); }
+      try {
+        await store.register(nick.value, avatar, pw.value); sfx.win(); confetti(60);
+        await recoveryOffer(box, store.currentUser().nick, pw.value);
+        go('#/');
+      }
       catch (ex) { err.textContent = ex.message; sfx.bad(); busy(submit, false); }
     });
     box.replaceChildren(form);

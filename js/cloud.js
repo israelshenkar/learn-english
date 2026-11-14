@@ -1,6 +1,7 @@
 // Firebase (Auth + Firestore) loaded straight from Google's CDN – no build step needed.
 // The web config below is public by design; access is enforced by the Firestore rules (firestore.rules).
-const SDK = 'https://www.gstatic.com/firebasejs/11.10.0';
+// Keep the version in sync with the modulepreload links in index.html.
+export const SDK = 'https://www.gstatic.com/firebasejs/11.10.0';
 
 export const firebaseConfig = {
   apiKey: 'AIzaSyCmNRcBPvMD9eGB1v4fxEQAFPFZyt07POY',
@@ -17,7 +18,7 @@ const EMAIL_DOMAIN = 'players.my-english-notebook.invalid';
 
 export const normNick = nick => nick.normalize('NFC').trim().toLowerCase();
 
-async function nickToEmail(nick) {
+export async function nickToEmail(nick) {
   const bytes = new TextEncoder().encode(normNick(nick));
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   return `p${[...hash.slice(0, 20)].map(b => b.toString(16).padStart(2, '0')).join('')}@${EMAIL_DOMAIN}`;

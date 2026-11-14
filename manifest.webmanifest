@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "המחברת האנגלית – לומדים אנגלית בכיף",
+  "short_name": "המחברת",
+  "description": "משחקים ללימוד אנגלית לדוברי עברית: אותיות, קריאה, כתיבה ומילים יומיומיות – עם נקודות וגביעים.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf6ea",
+  "theme_color": "#fbf6ea",
+  "categories": ["education", "kids", "games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
