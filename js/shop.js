@@ -3,7 +3,7 @@ import { AVATARS } from './data.js';
 import * as store from './store.js';
 import { awardTrophies } from './trophies.js';
 import { h, toast, confetti, sfx } from './ui.js';
-import { SHOP_AVATARS, THEMES, FREEZE_PRICE, MAX_FREEZES, ensure, owns, applyTheme, paintChips } from './rewards.js';
+import { SHOP_AVATARS, THEMES, FREEZE_PRICE, MAX_FREEZES, ensure, owns, applyTheme, paintChips, useFreezes } from './rewards.js';
 
 // `mount`, `topbar` and `announceTrophies` come from app.js (passed in to avoid a circular import).
 export function shopScreen(user, { mount, topbar, announceTrophies }) {
@@ -69,11 +69,11 @@ export function shopScreen(user, { mount, topbar, announceTrophies }) {
 
   function buy(item) {
     armed = null;
-    let fresh = [], ok = false;
+    let fresh = [], ok = false, repaired = 0;
     store.update(pr => {
       ensure(pr);
       if (pr.wallet < item.price) return;
-      if (item.kind === 'freeze') { if (pr.freezes >= MAX_FREEZES) return; pr.freezes++; }
+      if (item.kind === 'freeze') { if (pr.freezes >= MAX_FREEZES) return; pr.freezes++; repaired = useFreezes(pr); } // covers a gap right away
       else { if (owns(pr, item.id)) return; pr.owned.push(item.id); }
       pr.wallet -= item.price;
       if (item.kind === 'theme') pr.theme = item.key;
@@ -86,7 +86,7 @@ export function shopScreen(user, { mount, topbar, announceTrophies }) {
     if (item.kind === 'avatar') store.setAvatar(item.emoji); // saves profile + leaderboard row
     else store.flush();
     if (item.kind === 'theme') applyTheme(store.currentUser());
-    toast(item.kind === 'freeze' ? '❄️ הקפאת רצף נשמרה!' : 'תתחדשו! 🎉');
+    toast(item.kind !== 'freeze' ? 'תתחדשו! 🎉' : repaired ? '❄️ הרצף שלכם תוקן!' : '❄️ הקפאת רצף נשמרה!');
     afterChange();
     announceTrophies(fresh);
   }

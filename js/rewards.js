@@ -48,7 +48,7 @@ export function ensure(p) {
 }
 
 export const roundsToday = p => (ensure(p).daily.date === today() ? p.daily.rounds : 0);
-export const goalMetToday = p => ensure(p).days.includes(today());
+export const goalMetToday = p => ensure(p).daily.date === today() && p.daily.celebrated;
 export function owns(p, id) {
   if (id === 'theme:') return true;                                          // classic notebook
   if (id.startsWith('avatar:') && AVATARS.includes(id.slice(7))) return true; // the 12 starting avatars
@@ -161,7 +161,7 @@ export function todayCard(p) {
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const ds = dateStr(d);
-    const state = frozen.has(ds) ? 'frozen' : days.has(ds) ? 'done' : ds === t ? 'today' : ds > t ? 'future' : 'missed';
+    const state = ds === t ? (met ? 'done' : 'today') : frozen.has(ds) ? 'frozen' : days.has(ds) ? 'done' : ds > t ? 'future' : 'missed';
     const mark = { done: '✓', frozen: '❄️', today: `${Math.min(n, GOAL)}/${GOAL}`, future: '', missed: '·' }[state];
     return h('li', { class: `wday ${state} ${ds === t ? 'is-today' : ''}`, title: d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' }) },
       h('span', { class: 'wday-name' }, DAY_LETTERS[i]), h('span', { class: 'wday-mark' }, mark));
