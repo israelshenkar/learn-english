@@ -7,6 +7,10 @@ import { speak, speakLetter, canListen, listenOnce } from './speech.js';
 export const itemKey = (unit, item) => unit.kind === 'letters' ? item.u : item.en;
 const itemsOf = unit => unit.kind === 'letters' ? LETTERS : unit.items;
 
+// Adaptive item choice + per-item results (see mastery.js); fall back to random when the api lacks them.
+const choose = (api, pool, n, skill) => api.pickItems ? api.pickItems(pool, n, skill) : sample(pool, n);
+const rec = (api, key, correct, skill, unitId) => api.recordItem?.(key, correct, skill, unitId);
+
 export const starsFor = ratio => ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
 
 function scorer() {
@@ -41,13 +45,14 @@ function hud(total) {
   };
 }
 
-const speakerBtn = (onclick, label = 'השמיעו שוב') =>
+export const speakerBtn = (onclick, label = 'השמיעו שוב') =>
   h('button', { class: 'speaker', type: 'button', 'aria-label': label, onclick }, '🔊');
 
 // ---------------------------------------------------------------------------
 // Generic multiple-choice runner
-// question = { prompt: () => Node, options: [{ label: Node, correct: bool }], onShow?, reveal? , layout? }
-function mcq(root, api, questions) {
+// question = { prompt: () => Node, options: [{ label: Node, correct: bool }], onShow?, reveal? , layout?,
+//              key?, skill?, unitId? }  – key/skill record the answer for that item
+export function mcq(root, api, questions) {
   const s = scorer();
   const bar = hud(questions.length);
   const stage = h('div', { class: 'stage' });
@@ -63,6 +68,7 @@ function mcq(root, api, questions) {
         if (locked) return;
         locked = true;
         const correctBtn = opts.find((_, k) => q.options[k].correct);
+        if (q.key != null) rec(api, q.key, o.correct, q.skill || 'recog', q.unitId);
         if (o.correct) {
           s.hit(); sfx.good(); b.classList.add('right');
         } else {
@@ -89,7 +95,7 @@ function mcq(root, api, questions) {
   show();
 }
 
-function distractors(pool, target, n, keyFn) {
+export function distractors(pool, target, n, keyFn) {
   return sample(pool.filter(x => keyFn(x) !== keyFn(target)), n);
 }
 
@@ -170,12 +176,13 @@ function learn(root, unit, api) {
 // ---------------------------------------------------------------------------
 // LETTERS: listen to a letter name, pick it.
 function listenLetters(root, unit, api) {
-  const qs = sample(LETTERS, 10).map(L => {
+  const qs = choose(api, LETTERS, 10, 'recog').map(L => {
     const upper = Math.random() < 0.5;
     const show = x => upper ? x.u : x.l;
     const options = shuffle([L, ...distractors(LETTERS, L, 3, x => x.u)])
       .map(x => ({ label: en(show(x), 'glyph'), correct: x === L }));
     return {
+      key: L.u, skill: 'recog',
       layout: 'letters',
       prompt: () => [h('p', { class: 'ask' }, `הקשיבו ובחרו את האות ${upper ? 'הגדולה' : 'הקטנה'}`),
                      speakerBtn(() => speakLetter(L.u))],
@@ -189,7 +196,8 @@ function listenLetters(root, unit, api) {
 
 // WORDS: hear the English word, pick the picture.
 function listenWords(root, unit, api) {
-  const qs = sample(unit.items, Math.min(8, unit.items.length)).map(w => ({
+  const qs = choose(api, unit.items, Math.min(8, unit.items.length), 'recog').map(w => ({
+    key: w.en, skill: 'recog',
     layout: 'pictures',
     prompt: () => [h('p', { class: 'ask' }, 'הקשיבו – מה שמעתם?'), speakerBtn(() => speak(w.en))],
     onShow: () => speak(w.en),
@@ -202,7 +210,8 @@ function listenWords(root, unit, api) {
 
 // WORDS: see the picture + Hebrew, pick the English word.
 function pick(root, unit, api) {
-  const qs = sample(unit.items, Math.min(8, unit.items.length)).map(w => ({
+  const qs = choose(api, unit.items, Math.min(8, unit.items.length), 'recog').map(w => ({
+    key: w.en, skill: 'recog',
     prompt: () => [h('span', { class: 'emoji huge' }, w.emoji),
                    h('p', { class: 'ask' }, `איך אומרים באנגלית "${w.he}"?`)],
     reveal: () => speak(w.en),
@@ -214,7 +223,8 @@ function pick(root, unit, api) {
 
 // READING: read a written word, pick the picture (no audio until answered – real reading!).
 function read(root, unit, api) {
-  const qs = sample(CVC, 8).map(w => ({
+  const qs = choose(api, CVC, 8, 'recog').map(w => ({
+    key: w.en, skill: 'recog',
     layout: 'pictures',
     prompt: () => [h('p', { class: 'ask' }, 'קראו את המילה ובחרו את התמונה'), en(w.en, 'word reading')],
     reveal: () => speak(w.en),
@@ -229,10 +239,11 @@ const oneLetterOff = (a, b) => a.length === b.length && a !== b && [...a].filter
 // READING: hear a word, choose how it is written among look-alikes (cat / hat / cut / cap).
 function sounds(root, unit, api) {
   const pool = [...new Set([...CVC.map(w => w.en), ...LOOKALIKES])];
-  const qs = sample(CVC, 8).map(w => {
+  const qs = choose(api, CVC, 8, 'recog').map(w => {
     let wrong = sample(pool.filter(x => oneLetterOff(x, w.en)), 3);
     if (wrong.length < 3) wrong = [...wrong, ...sample(pool.filter(x => x !== w.en && !wrong.includes(x)), 3 - wrong.length)];
     return {
+      key: w.en, skill: 'recog',
       prompt: () => [h('p', { class: 'ask' }, 'הקשיבו – איזו מילה שמעתם?'), speakerBtn(() => speak(w.en, { rate: 0.7 }))],
       onShow: () => speak(w.en, { rate: 0.7 }),
       reveal: () => {},
@@ -246,7 +257,7 @@ function sounds(root, unit, api) {
 // ---------------------------------------------------------------------------
 // LETTERS: memory game matching uppercase with lowercase.
 function memory(root, unit, api) {
-  const letters = sample(LETTERS, 6);
+  const letters = choose(api, LETTERS, 6, 'recog');
   const cards = shuffle(letters.flatMap(L => [{ L, ch: L.u, kind: 'up' }, { L, ch: L.l, kind: 'low' }]));
   let open = [], matched = 0, moves = 0, misses = 0, points = 0, busy = false;
   const info = h('div', { class: 'memory-info' });
@@ -271,6 +282,7 @@ function memory(root, unit, api) {
       if (a.card.L === b.card.L && a.card.kind !== b.card.kind) {
         matched++; points += 10;
         sfx.good(); speakLetter(a.card.L.u);
+        rec(api, a.card.L.u, true, 'recog');
         a.el.classList.add('matched'); b.el.classList.add('matched');
         setInfo();
         if (matched === 6) {
@@ -296,7 +308,7 @@ function memory(root, unit, api) {
 // LETTERS: trace the letter with a finger / mouse. Scored by how well the ink covers the guide.
 async function trace(root, unit, api) {
   try { await document.fonts.load('700 100px Andika'); } catch {}
-  const items = sample(LETTERS, 6).map(L => ({ L, ch: Math.random() < 0.5 ? L.u : L.l }));
+  const items = choose(api, LETTERS, 6, 'write').map(L => ({ L, ch: Math.random() < 0.5 ? L.u : L.l }));
   const s = scorer();
   const bar = hud(items.length);
   const SIZE = 300, G = 100, BRUSH = 24;
@@ -393,14 +405,14 @@ async function trace(root, unit, api) {
     attempts++;
     if (coverage >= 0.6 && precision >= 0.72) {
       checkBtn.disabled = skipBtn.disabled = true; // no double scoring while the next letter loads
-      if (firstTryOk) s.hit(); else { s.correct++; s.points += 5; }
+      if (firstTryOk) { s.hit(); rec(api, items[i].L.u, true, 'write'); } else { s.correct++; s.points += 5; }
       sfx.good(); speakLetter(items[i].L.u);
       feedback.textContent = ['מעולה! ✨', 'יפה מאוד! 👏', 'כל הכבוד! 🌟'][Math.floor(Math.random() * 3)];
       feedback.className = 'feedback good';
       bar.set(i + 1, s);
       api.later(advance, 1100);
     } else {
-      if (firstTryOk) { firstTryOk = false; s.miss(); }
+      if (firstTryOk) { firstTryOk = false; s.miss(); rec(api, items[i].L.u, false, 'write'); }
       sfx.bad();
       feedback.className = 'feedback bad';
       feedback.textContent = coverage < 0.6 ? 'כמעט! נסו לעבור על כל חלקי האות' : 'נסו לכתוב בדיוק על הקווים של האות';
@@ -427,7 +439,7 @@ async function trace(root, unit, api) {
 // SPELL: build the word from letter tiles (tap or type).
 function spell(root, unit, api) {
   const pool = (unit.kind === 'reading' ? CVC : unit.items).filter(w => /^[a-z]{2,8}$/.test(w.en));
-  const words = sample(pool, Math.min(6, pool.length));
+  const words = choose(api, pool, Math.min(6, pool.length), 'spell');
   const s = scorer();
   const bar = hud(words.length);
   const stage = h('div', { class: 'stage' });
@@ -479,14 +491,14 @@ function spell(root, unit, api) {
     const guess = slots.map(x => x.textContent).join('');
     locked = true;
     if (guess === w.en) {
-      if (tries === 0) s.hit(); else { s.correct++; s.points += 5; }
+      if (tries === 0) { s.hit(); rec(api, w.en, true, 'spell'); } else { s.correct++; s.points += 5; }
       sfx.good(); speak(w.en);
       slots.forEach(x => x.classList.add('right'));
       bar.set(i + 1, s);
       api.later(next, 1200);
     } else {
       tries++;
-      if (tries === 1) s.miss();
+      if (tries === 1) { s.miss(); rec(api, w.en, false, 'spell'); }
       sfx.bad();
       slots.forEach((x, k) => x.classList.add(x.textContent === w.en[k] ? 'right' : 'wrong'));
       api.later(() => {
@@ -538,7 +550,7 @@ function say(root, unit, api) {
       h('p', { class: 'hint' }, 'נסו בדפדפן Chrome או Edge במחשב או בטלפון אנדרואיד. זה משחק בונוס – הוא לא נדרש כדי להתקדם.'))));
     return;
   }
-  const words = sample(unit.items, Math.min(6, unit.items.length));
+  const words = choose(api, unit.items, Math.min(6, unit.items.length), 'say');
   const s = scorer();
   const bar = hud(words.length);
   const stage = h('div', { class: 'stage' });
@@ -559,12 +571,12 @@ function say(root, unit, api) {
         const ok = alts.some(a => targets.some(t => a === t || a.split(/\s+/).includes(t) ||
                                    (t.length >= 4 && (a.includes(t) || lev(a, t) <= 1))));
         if (ok) {
-          if (tries === 0) s.hit(); else { s.correct++; s.points += 5; }
+          if (tries === 0) { s.hit(); rec(api, w.en, true, 'say'); } else { s.correct++; s.points += 5; }
           sfx.good(); fb.textContent = 'מצוין! אמרתם את זה נכון 🎉'; fb.className = 'feedback good';
           bar.set(i + 1, s);
           api.later(next, 1300);
         } else {
-          if (tries === 0) s.miss();
+          if (tries === 0) { s.miss(); rec(api, w.en, false, 'say'); }
           tries++;
           sfx.bad(); fb.className = 'feedback bad';
           fb.replaceChildren('שמענו: ', en(alts[0] || '…'), ' – הקשיבו ונסו שוב');

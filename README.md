@@ -13,6 +13,8 @@ A game-style site for Hebrew speakers learning English from zero. It is fully st
 - **Scoring:** 10 points per correct answer, +5 when on a streak of 3 or more. Each round earns 1–3 stars.
 - **Progression:** a unit unlocks once you earn half the stars of the unit before it. Bonus games don't count toward unlocking.
 - **Trophies:** 19 trophies, defined in `js/trophies.js`.
+- **Adaptive practice:** every answer is recorded per item (letter or word) and skill: recognise, write, spell, say. Rounds pick items that were never practiced first, then recent mistakes, then the longest unseen, with a little randomness. This way every letter A–Z comes up within a few rounds. Each unit page shows a grid of its items as not started, practicing or mastered. An item is mastered when it has passed every skill tested by the unit's non-bonus games.
+- **Daily review (חזרה יומית):** a home-screen card starts a mixed round of up to 8 practiced items whose review date has come. After a correct answer, the next review is 1, 3, 7 and then 14 days later; a mistake brings the item back today. The round earns points and counts toward the day streak, but gives no unit stars.
 - **Accounts:** a nickname, an avatar and a password of at least 6 characters, with no email needed. Progress is saved to Firebase, so a player can continue on any device.
 - **Leaderboard:** the top 20 players by points, visible only to signed-in players.
 - **Audio:** pronunciation uses the browser's built-in English voice (`speechSynthesis`). "Say it" uses speech recognition, which Chrome, Edge and Android support.
@@ -47,6 +49,8 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 - `firestore.rules`: a copy of the security rules published in the Firebase console.
 - `js/games.js`: the mini-games.
 - `js/trophies.js`: trophy rules.
+- `js/mastery.js`: per-item results (`progress.items[unitId][key]`), mastery, adaptive item choice and review due dates. These are pure functions with no DOM.
+- `js/review.js`: the daily review round, the home review card and the unit mastery grid.
 - `js/app.js`: screens and routing.
 - `js/speech.js`: text-to-speech and speech recognition.
 - `js/ui.js`: DOM helper, sound effects, confetti.

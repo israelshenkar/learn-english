@@ -4,6 +4,8 @@ import { TROPHIES, awardTrophies } from './trophies.js';
 import { runGame } from './games.js';
 import { h, en, toast, confetti, starsRow, sfx } from './ui.js';
 import { canSpeak } from './speech.js';
+import * as mastery from './mastery.js';
+import { REVIEW_UNIT, REVIEW_GAME, runReview, reviewCard, masteryGrid } from './review.js';
 
 const app = document.getElementById('app');
 let cleanups = [];
@@ -21,6 +23,7 @@ function render() {
   if ((m = hash.match(/^#\/unit\/([\w-]+)$/))) return unitScreen(user, m[1]);
   if ((m = hash.match(/^#\/play\/([\w-]+)\/(\w+)$/))) return playScreen(user, m[1], m[2]);
   if (hash === '#/trophies') return trophiesScreen(user);
+  if (hash === '#/review') return playScreen(user, REVIEW_UNIT.id, 'review');
   return homeScreen(user);
 }
 
@@ -165,6 +168,7 @@ function homeScreen(user) {
     h('h1', { tabindex: -1 }, `שלום ${user.nick}! `, h('span', { class: 'wave' }, '👋')),
     h('p', { class: 'lead' }, 'בחרו שלב במסלול. כל שלב נפתח כשאוספים חצי מהכוכבים בשלב שלפניו.'),
     !canSpeak && h('p', { class: 'warn' }, 'הדפדפן הזה לא יכול להשמיע קול – חלק מהמשחקים יעבדו בלי שמע.'),
+    reviewCard(p),
     h('ol', { class: 'path' }, UNITS.map((u, i) => {
       const open = store.unitUnlocked(p, i);
       const stars = store.unitStars(p, u), max = store.unitMaxStars(u);
@@ -202,19 +206,21 @@ function unitScreen(user, unitId) {
         h('span', { class: 'game-icon', 'aria-hidden': 'true' }, meta.icon),
         h('span', { class: 'game-text' }, h('b', {}, meta.title), h('small', {}, meta.desc)),
         meta.bonus ? h('span', { class: 'badge' }, 'בונוס') : starsRow(best));
-    }))));
+    })),
+    masteryGrid(p, unit)));
 }
 
 // ---------------------------------------------------------------------------
 function playScreen(user, unitId, gameId) {
+  const review = unitId === REVIEW_UNIT.id; // daily review: a mixed round, no stars
   const idx = UNITS.findIndex(u => u.id === unitId);
-  const unit = UNITS[idx];
-  if (!unit || !unit.games.includes(gameId) || !store.unitUnlocked(user.progress, idx)) return go('#/');
-  const meta = GAMES[gameId];
+  const unit = review ? REVIEW_UNIT : UNITS[idx];
+  if (!review && (!unit || !unit.games.includes(gameId) || !store.unitUnlocked(user.progress, idx))) return go('#/');
+  const meta = review ? REVIEW_GAME : GAMES[gameId];
   const root = h('div', { class: 'game' });
-  mount(topbar(user, { back: `#/unit/${unit.id}` }), h('main', { class: 'play', style: { '--c': unit.color } },
+  mount(topbar(user, { back: review ? '#/' : `#/unit/${unit.id}` }), h('main', { class: 'play', style: { '--c': unit.color } },
     h('h1', { class: 'play-title', tabindex: -1 }, h('span', { 'aria-hidden': 'true' }, meta.icon), ' ', meta.title,
-      h('small', {}, ` · ${unit.title}`)),
+      !review && h('small', {}, ` · ${unit.title}`)),
     root));
 
   const key = `${unit.id}/${gameId}`;
@@ -236,6 +242,11 @@ function playScreen(user, unitId, gameId) {
       announceTrophies(fresh);
     },
     onCleanup: fn => cleanups.push(fn),
+    // Per-item results + adaptive item choice (js/mastery.js).
+    recordItem(itemKey, correct, skill, forUnit = unit.id) {
+      store.update(pr => mastery.record(pr, forUnit, itemKey, correct, skill));
+    },
+    pickItems: (pool, n, skill) => mastery.pickItems(store.currentUser().progress, unit, pool, n, skill),
     finish(res) {
       if (finished || !alive) return;
       finished = true;
@@ -243,7 +254,7 @@ function playScreen(user, unitId, gameId) {
       const prevBest = store.currentUser().progress.stars[key] || 0;
       let fresh = [];
       const u = store.update(pr => {
-        pr.stars[key] = Math.max(pr.stars[key] || 0, res.stars);
+        if (!review) pr.stars[key] = Math.max(pr.stars[key] || 0, res.stars);
         pr.points += res.points;
         pr.stats.rounds++;
         if (!res.learn && !res.wrong && res.total) pr.stats.perfect++;
@@ -259,7 +270,8 @@ function playScreen(user, unitId, gameId) {
       showResults(user, unit, gameId, res, { fresh, newUnit: after > before ? UNITS[after - 1] : null, prevBest });
     },
   };
-  runGame(gameId, root, unit, api);
+  if (review) runReview(root, api, store.currentUser().progress);
+  else runGame(gameId, root, unit, api);
 }
 
 function refreshChips(u) {
@@ -278,7 +290,7 @@ function announceTrophies(list) {
 
 function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest }) {
   const games = unit.games;
-  const nextGame = games[games.indexOf(gameId) + 1];
+  const nextGame = unit.review ? null : games[games.indexOf(gameId) + 1];
   const msg = res.stars === 3 ? 'מדהים!' : res.stars === 2 ? 'כל הכבוד!' : res.stars === 1 ? 'יפה, ממשיכים להתאמן!' : 'לא נורא – ננסה שוב?';
   const overlay = h('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'res-title' },
     h('div', { class: 'result sheet' },
@@ -293,11 +305,11 @@ function showResults(user, unit, gameId, res, { fresh, newUnit, prevBest }) {
         h('b', {}, fresh.length > 1 ? 'גביעים חדשים:' : 'גביע חדש:'),
         fresh.map(t => h('span', { class: 'trophy-mini' }, h('span', {}, t.icon), t.title))),
       h('div', { class: 'row wrap' },
-        h('button', { class: 'btn', type: 'button', onclick: () => { overlay.remove(); render(); } }, '🔁 שוב'),
+        !unit.review && h('button', { class: 'btn', type: 'button', onclick: () => { overlay.remove(); render(); } }, '🔁 שוב'),
         nextGame && h('a', { class: 'btn primary', href: `#/play/${unit.id}/${nextGame}`, onclick: () => overlay.remove() },
           `הבא: ${GAMES[nextGame].title}`),
-        h('a', { class: 'btn ghost', href: newUnit ? '#/' : `#/unit/${unit.id}`, onclick: () => overlay.remove() },
-          newUnit ? 'למסלול' : 'לשלב'))));
+        h('a', { class: `btn ${unit.review ? 'primary' : 'ghost'}`, href: newUnit || unit.review ? '#/' : `#/unit/${unit.id}`, onclick: () => overlay.remove() },
+          newUnit || unit.review ? 'למסלול' : 'לשלב'))));
   document.body.append(overlay);
   cleanups.push(() => overlay.remove());
   overlay.querySelector('h2').focus();

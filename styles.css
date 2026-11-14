@@ -437,3 +437,48 @@ a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .linkish { font: inherit; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .btn:disabled { opacity: .6; cursor: wait; }
+
+/* ==========================================================================
+   smart practice: daily review card + per-unit mastery grid (js/review.js)
+   ========================================================================== */
+.review-card {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  margin: 16px 0 6px; padding: 12px 16px; text-decoration: none; color: inherit;
+  background: #f4eefc; border: 2.5px solid var(--ink); border-radius: var(--radius);
+  box-shadow: 0 5px 0 var(--ink); transition: transform .12s; max-width: 520px;
+}
+a.review-card:hover { transform: translateY(-3px); }
+.review-card.done { background: #eaf7ef; box-shadow: 0 3px 0 #9fbfab; border-color: #6f9a80; }
+.review-icon { font-size: 1.8rem; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 2px solid var(--ink); }
+.review-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.review-text b { font-size: 1.15rem; }
+.review-text small { color: var(--ink-soft); }
+.review-card .small-btn { padding: .3em .9em; font-size: .95rem; min-height: 38px; }
+@media (max-width: 520px) {
+  .review-card { grid-template-columns: auto 1fr; padding: 10px 12px; }
+  .review-card .small-btn { display: none; }
+  .review-icon { width: 44px; height: 44px; font-size: 1.5rem; }
+}
+
+.mastery { margin-top: 22px; }
+.mastery-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mastery-head h2 { margin: 0; font-size: 1.15rem; }
+.mastery-count { font-weight: 700; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: .05em .7em; font-size: .9rem; }
+.mastery-grid { display: grid; gap: 6px; margin: 12px 0 8px; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); }
+.mastery-grid.words, .mastery-grid.reading { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+.mitem {
+  font: inherit; color: var(--ink); cursor: pointer; border-radius: 10px; padding: 4px 2px; min-height: 40px;
+  display: flex; align-items: center; justify-content: center; gap: 4px; line-height: 1.1;
+  background: #fff; border: 2px dashed #b9c6dd;
+}
+.mitem .glyph { font-size: 1.05rem; }
+.mitem .memoji { font-size: 1.1rem; }
+.mitem .mword { font-size: .8rem; text-align: center; overflow-wrap: anywhere; }
+.mitem.practicing { background: #fff3c4; border: 2px solid #e8b500; }
+.mitem.mastered { background: #d8f3e3; border: 2px solid var(--green); }
+.mitem:active { transform: scale(.95); }
+.mastery-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .8rem; color: var(--ink-soft); }
+.legend { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; background: #fff; border: 2px dashed #b9c6dd; }
+.legend.practicing i { background: #fff3c4; border: 2px solid #e8b500; }
+.legend.mastered i { background: #d8f3e3; border: 2px solid var(--green); }
