@@ -6,16 +6,49 @@
   <title>המחברת האנגלית – לומדים אנגלית בכיף</title>
   <meta name="description" content="אתר משחקים ללימוד אנגלית לדוברי עברית: אותיות, קריאה, כתיבה ומילים יומיומיות – עם נקודות וגביעים.">
   <meta name="theme-color" content="#fbf6ea">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23ffd84d'/><text x='32' y='46' font-family='Arial' font-weight='700' font-size='34' text-anchor='middle' fill='%231d2a5b'>Aa</text></svg>">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="המחברת">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <!-- Fonts load without blocking the first paint (font-display: swap); the system font shows until they arrive. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@400;500;600;700&display=swap"></noscript>
   <link rel="stylesheet" href="styles.css">
+  <!-- Fetch the whole module graph and the Firebase SDK in parallel instead of one import level at a time.
+       The SDK version must match SDK in js/cloud.js. -->
+  <link rel="modulepreload" href="js/app.js">
+  <link rel="modulepreload" href="js/store.js">
+  <link rel="modulepreload" href="js/cloud.js">
+  <link rel="modulepreload" href="js/data.js">
+  <link rel="modulepreload" href="js/games.js">
+  <link rel="modulepreload" href="js/ui.js">
+  <link rel="modulepreload" href="js/speech.js">
+  <link rel="modulepreload" href="js/trophies.js">
+  <link rel="modulepreload" href="js/account.js">
+  <link rel="modulepreload" href="js/recovery.js">
+  <link rel="modulepreload" href="js/nickfilter.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js">
 </head>
 <body>
   <div id="app" aria-live="off">
+    <!-- Shown instantly while the app and the saved sign-in load; js/app.js replaces it. -->
+    <div class="loading" role="status">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><bdi class="en glyph" dir="ltr" lang="en">Aa</bdi></span>
+        <span class="brand-text"><b>המחברת האנגלית</b><small><bdi class="en " dir="ltr" lang="en">My English Notebook</bdi></small></span>
+      </div>
+      <p>טוענים את המחברת…</p>
+    </div>
     <noscript>כדי לשחק צריך להפעיל JavaScript בדפדפן.</noscript>
   </div>
   <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/pwa.js"></script>
 </body>
 </html>

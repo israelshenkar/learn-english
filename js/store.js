@@ -3,6 +3,7 @@
 // (debounced, and flushed right away at the end of each round).
 import { UNITS, GAMES } from './data.js';
 import * as cloud from './cloud.js';
+import { isNickAllowed, NICK_BLOCKED_MESSAGE } from './nickfilter.js';
 
 const RECENT_KEY = 'mec.recent.v1';      // nicknames that signed in on this device (for quick login)
 const SETTINGS_KEY = 'mec.settings.v1';
@@ -53,6 +54,7 @@ async function loadProfile(uid) {
   const data = await cloud.readProfile(uid);
   if (!data) { cur = null; return; }
   cur = { uid, nick: data.nick, avatar: data.avatar, created: data.created, progress: withDefaults(data.progress) };
+  if (data.recovery) cur.recovery = data.recovery; // see recovery.js
   rememberRecent(cur);
   touchDay();
 }
@@ -77,6 +79,7 @@ function checkNick(nick) {
 
 export async function register(nick, avatar, password) {
   nick = checkNick(nick);
+  if (!isNickAllowed(nick)) throw new Error(NICK_BLOCKED_MESSAGE);
   if (password.length < 6) throw new Error('הסיסמה צריכה להיות לפחות 6 תווים');
   let user;
   try { user = await cloud.signUp(nick, password); }
@@ -100,6 +103,13 @@ export async function login(nick, password) {
     rememberRecent(cur);
     await flush();
   }
+}
+
+// Remember (or forget, with null) the player's recovery vault sign-in – see recovery.js. Saved right away.
+export function setRecovery(ref) {
+  if (!cur) return saving;
+  if (ref) cur.recovery = ref; else delete cur.recovery;
+  return flush();
 }
 
 export async function logout() {
@@ -129,8 +139,8 @@ function touchDay() { update(() => {}); }
 export function flush() {
   clearTimeout(saveTimer);
   if (!cur) return saving;
-  const { uid, nick, avatar, created, progress } = cur;
-  const snapshot = JSON.parse(JSON.stringify({ nick, avatar, created, progress }));
+  const { uid, nick, avatar, created, progress, recovery } = cur;
+  const snapshot = JSON.parse(JSON.stringify({ nick, avatar, created, progress, recovery }));
   saving = saving
     .then(() => cloud.writeProfile(uid, snapshot, Object.keys(snapshot.progress.trophies).length))
     .catch(err => console.warn('[mec] save failed – will retry on next change', err));
