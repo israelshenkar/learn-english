@@ -7,7 +7,8 @@
 import { LETTERS, GAMES } from './data.js';
 
 export const GAME_SKILL = { listen: 'recog', pick: 'recog', read: 'recog', sounds: 'recog', memory: 'recog',
-                            trace: 'write', spell: 'spell', say: 'say' };
+                            trace: 'write', spell: 'spell', say: 'say',
+                            sentpic: 'recog', build: 'recog' };
 const INTERVALS = [0, 1, 3, 7, 14]; // days until the next review, by box
 const SPELLABLE = /^[a-z]{2,8}$/;  // same filter the spell game uses
 

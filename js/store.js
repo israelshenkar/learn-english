@@ -160,6 +160,7 @@ export const unitNeeded = unit => Math.ceil(unitMaxStars(unit) / 2);
 
 export function unitUnlocked(p, index) {
   if (index === 0) return true;
+  if (unitStars(p, UNITS[index]) > 0) return true; // once played, a unit stays open even if a new game raised the bar before it
   const prev = UNITS[index - 1];
   return unitStars(p, prev) >= unitNeeded(prev) && unitUnlocked(p, index - 1);
 }

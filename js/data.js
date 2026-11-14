@@ -1,3 +1,5 @@
+import { EXTRA_WORD_UNITS, SENTENCE_UNIT, EXTRA_GAMES } from './data-extra.js';
+
 // Course content. All Hebrew text is shown RTL; all English text is wrapped LTR in the UI.
 
 // name = how the letter's NAME sounds (American English), written in Hebrew.
@@ -201,15 +203,17 @@ export const GAMES = {
   pick:   { title: 'מה זה באנגלית?',     icon: '🎯', desc: 'רואים תמונה ובוחרים מילה' },
   spell:  { title: 'מאייתים',           icon: '🧩', desc: 'בונים את המילה מאותיות' },
   say:    { title: 'אומרים בקול',        icon: '🎤', desc: 'אומרים את המילה למיקרופון', bonus: true },
+  ...EXTRA_GAMES,
 };
 
 export const UNITS = [
   { id: 'letters', title: 'האותיות', subtitle: 'מזהים, שומעים וכותבים את ה-ABC', icon: '🔤', color: '#4aa3df',
-    kind: 'letters', games: ['learn', 'listen', 'memory', 'trace'] },
+    kind: 'letters', games: ['learn', 'listen', 'memory', 'trace', 'order'] },
   { id: 'reading', title: 'קריאה ראשונה', subtitle: 'מחברים אותיות למילים קצרות', icon: '📖', color: '#2bb673',
     kind: 'reading', items: CVC, games: ['learn', 'read', 'sounds', 'spell'] },
-  ...WORD_UNITS.map(u => ({ ...u, subtitle: 'מילים יומיומיות', kind: 'words', items: u.words,
-    games: ['learn', 'pick', 'listen', 'spell', 'say'] })),
+  ...[...WORD_UNITS, ...EXTRA_WORD_UNITS].map(u => ({ ...u, subtitle: 'מילים יומיומיות', kind: 'words', items: u.words,
+    games: u.games || ['learn', 'pick', 'listen', 'spell', 'say'] })),
+  SENTENCE_UNIT,
 ];
 
 export const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐯', '🐨', '🐵', '🦄', '🐙', '🐢', '🦉', '🐳'];
