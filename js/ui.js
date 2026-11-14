@@ -43,6 +43,8 @@ export const sfx = {
   good() { if (settings.get().sound) { tone(660, 0, 0.12, 'triangle'); tone(990, 0.09, 0.18, 'triangle'); } },
   bad() { if (settings.get().sound) { tone(220, 0, 0.18, 'square', 0.08); tone(180, 0.12, 0.22, 'square', 0.08); } },
   win() { if (settings.get().sound) [523, 659, 784, 1046].forEach((f, i) => tone(f, i * 0.11, 0.25, 'triangle')); },
+  goal() { if (settings.get().sound) [523, 659, 784, 659, 784, 1046, 1318].forEach((f, i) => tone(f, i * 0.09, i === 6 ? 0.5 : 0.18, 'triangle', 0.16)); },
+  coin() { if (settings.get().sound) { tone(988, 0, 0.08, 'square', 0.06); tone(1319, 0.07, 0.25, 'square', 0.06); } },
   flip() { if (settings.get().sound) tone(880, 0, 0.05, 'sine', 0.08); },
 };
 

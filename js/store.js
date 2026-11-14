@@ -15,14 +15,14 @@ function write(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
-const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+export const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
 
 function freshProgress() {
   return {
     points: 0,
     stars: {},          // "unit/game" -> best stars (0..3)
     seen: {},           // unitId -> [item keys viewed in "learn"]
-    days: [],           // dates played
+    days: [],           // dates the daily goal was met (see rewards.js; older entries = days played)
     trophies: {},       // trophyId -> date earned
     stats: { rounds: 0, perfect: 0, correct: 0, wrong: 0, bestStreak: 0, traced: 0, said: 0 },
   };
@@ -110,14 +110,20 @@ export async function logout() {
 
 export function currentUser() { return cur; }
 
+// Change the player's avatar (profile + leaderboard row) and save right away.
+export function setAvatar(avatar) {
+  if (!cur) return saving;
+  cur.avatar = avatar;
+  rememberRecent(cur);
+  return flush();
+}
+
 // --- Saving --------------------------------------------------------------------
 
 // Apply a change to the current player's progress; it's saved to the cloud shortly after.
 export function update(fn) {
   if (!cur) return null;
   fn(cur.progress);
-  const d = today();
-  if (!cur.progress.days.includes(d)) cur.progress.days.push(d);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flush, 1500);
   return cur;
@@ -144,12 +150,13 @@ export async function leaderboard() {
 
 // --- Derived values -------------------------------------------------------
 
+// Consecutive days the daily goal was met. Days covered by a streak freeze keep it alive but don't add to it.
 export function dayStreak(p) {
-  const set = new Set(p.days);
+  const set = new Set(p.days), frozen = new Set(p.frozen || []);
   let n = 0;
   const d = new Date();
   if (!set.has(d.toLocaleDateString('en-CA'))) d.setDate(d.getDate() - 1); // streak still alive until tonight
-  while (set.has(d.toLocaleDateString('en-CA'))) { n++; d.setDate(d.getDate() - 1); }
+  for (let k; set.has(k = d.toLocaleDateString('en-CA')); d.setDate(d.getDate() - 1)) if (!frozen.has(k)) n++;
   return n;
 }
 
