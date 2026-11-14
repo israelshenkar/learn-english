@@ -20,6 +20,8 @@ A game-style site for Hebrew speakers learning English from zero. It is fully st
 - **Coins & shop:** 1 🪙 per star earned in a round, +10 for meeting the daily goal. The shop (`#/shop`) sells extra avatars, notebook themes and streak freezes. Logic lives in `js/rewards.js` and `js/shop.js`.
 - **Accounts:** a nickname, an avatar and a password of at least 6 characters, with no email needed. Progress is saved to Firebase, so a player can continue on any device.
 - **Leaderboard:** the top 20 players by points, visible only to signed-in players.
+- **Parent report (`#/progress`, linked from the trophies page):** a printable page for adults with play per day over the last 14 days, units completed, letters/words learned or mastered, and weak spots.
+- **Groups (`#/groups`):** a family or a class. A player creates a group and gets a 6-character join code, or joins one with a code. Members see a private leaderboard; the creator also sees each member's progress summary and can remove members (which changes the code) or delete the group.
 - **Audio:** pronunciation uses the browser's built-in English voice (`speechSynthesis`). "Say it" uses speech recognition, which Chrome, Edge and Android support.
 - **Letter sounds:** TTS can only say letter *names*, so the phonics sounds (/b/, /s/, short vowels…) are small clips in `audio/letters/` (about 55 KB in all). They were generated on a Mac from IPA with Apple's built-in voice by `tools/letter-sounds/build.py`. If a clip can't play, the game says the example word instead.
 
@@ -42,7 +44,22 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 - **Project:** `my-english-notebook-f96a8`, on the free Spark plan. The database is Firestore in `me-west1` (Tel Aviv).
 - **How nicknames sign in:** each nickname maps to a made-up address, `p<hash>@players.my-english-notebook.invalid`, used with Email/Password sign-in. No real email is used, so **there is no password reset**. If a player forgets their password, the only option is to delete the account under Authentication → Users and register again, which loses their progress.
 - **Data:** `users/{uid}` holds a player's full progress and only that player can access it. `leaderboard/{uid}` holds the nickname, avatar, points and trophy count; any signed-in player can read it.
+- **Groups data:** `groups/{gid}` (name, current code, owner), `groups/{gid}/members/{uid}` (a small summary each member writes for themself: nick, avatar, points, stars per unit, counts, last active day), `groupCodes/{code}` (lookup by exact code only, never listable) and `memberships/{uid}` (the player's own list of group ids). Until the rules below are published, the groups page says groups aren't enabled yet; everything else keeps working.
 - **Rules:** if you change `firestore.rules`, paste it into Firestore → Rules in the console and press Publish.
+
+### Local emulator and rules tests
+
+Groups can be tried without touching the live project. This needs Java 11 or newer.
+
+```bash
+npx firebase-tools emulators:start --only firestore,auth --project demo-mec
+```
+
+Then open http://localhost:8765/?emulator=1. The switch only works on localhost, and it uses a separate app instance and an in-memory cache. The security-rules tests run against the same emulator:
+
+```bash
+cd tests/rules && npm install && npm test
+```
 - **Hosting:** `learn-english.shenkar.site` and `israelshenkar.github.io` are listed under Authentication → Settings → Authorized domains.
 
 ## Code map
@@ -60,6 +77,9 @@ Then open http://localhost:8765. ES modules need a server; opening the file from
 - `js/review.js`: the daily review round, the home review card and the unit mastery grid.
 - `js/rewards.js`: daily goal, day streak, coins, streak freezes and notebook themes.
 - `js/shop.js`: the shop screen (`#/shop`).
+- `js/report.js`: progress metrics for adults and the per-day log (`progress.dayLog`).
+- `js/parent.js`: the parent report page.
+- `js/groups.js`: groups (Firestore calls and screens).
 - `js/app.js`: screens and routing.
 - `js/speech.js`: text-to-speech and speech recognition.
 - `js/ui.js`: DOM helper, sound effects, confetti.

@@ -8,6 +8,9 @@ import * as mastery from './mastery.js';
 import { REVIEW_UNIT, REVIEW_GAME, runReview, reviewCard, masteryGrid } from './review.js';
 import * as rewards from './rewards.js';
 import { shopScreen } from './shop.js';
+import { logRound } from './report.js';
+import { progressScreen } from './parent.js';
+import { groupsScreen, groupScreen, syncSummaries } from './groups.js';
 
 const app = document.getElementById('app');
 let cleanups = [];
@@ -29,8 +32,14 @@ function render() {
   if (hash === '#/trophies') return trophiesScreen(user);
   if (hash === '#/review') return playScreen(user, REVIEW_UNIT.id, 'review');
   if (hash === '#/shop') return shopScreen(user, { mount, topbar, announceTrophies });
+  if (hash === '#/progress') return progressScreen(user, kit);
+  if (hash === '#/groups') return groupsScreen(user, kit);
+  if ((m = hash.match(/^#\/group\/([\w-]+)$/))) return groupScreen(user, m[1], kit);
   return homeScreen(user);
 }
+
+// Shared helpers handed to screens that live in their own modules (parent.js, groups.js).
+const kit = { mount: (...a) => mount(...a), topbar: (...a) => topbar(...a), go: (...a) => go(...a), render: () => render() };
 
 function mount(...nodes) {
   app.replaceChildren(...nodes);
@@ -233,6 +242,7 @@ function playScreen(user, unitId, gameId) {
 
   const key = `${unit.id}/${gameId}`;
   let finished = false, alive = true;
+  const startedAt = Date.now();
   cleanups.push(() => { alive = false; });
   const api = {
     // Delayed steps die with the screen, so leaving mid-answer doesn't leak into the next page.
@@ -275,9 +285,11 @@ function playScreen(user, unitId, gameId) {
         pr.stats.bestStreak = Math.max(pr.stats.bestStreak, res.best || 0);
         pr.stats.traced += res.traced || 0;
         pr.stats.said += res.said || 0;
+        logRound(pr, res, (Date.now() - startedAt) / 1000);
         fresh = awardTrophies(pr);
       });
       store.flush(); // save the round to the cloud right away
+      syncSummaries(); // and the small summary my groups see (no-op without groups)
       const after = UNITS.filter((_, i) => store.unitUnlocked(u.progress, i)).length;
       showResults(user, unit, gameId, res, { fresh, newUnit: after > before ? UNITS[after - 1] : null, prevBest, reward });
     },
@@ -342,6 +354,9 @@ function trophiesScreen(user) {
   mount(topbar(user, { back: '#/' }), h('main', { class: 'trophies' },
     h('h1', { tabindex: -1 }, 'הגביעים שלי'),
     h('p', { class: 'lead' }, `אספת ${got} מתוך ${TROPHIES.length} גביעים`),
+    h('nav', { class: 'trophy-links', 'aria-label': 'עוד' },
+      h('a', { class: 'btn', href: '#/progress' }, '📊 דוח התקדמות להורים'),
+      h('a', { class: 'btn', href: '#/groups' }, '👨‍👩‍👧 קבוצות: משפחה וכיתה')),
     h('ul', { class: 'trophy-grid' }, TROPHIES.map(t => {
       const when = p.trophies[t.id];
       return h('li', { class: `trophy ${when ? 'earned' : 'locked'}` },

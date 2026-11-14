@@ -25,6 +25,23 @@ async function nickToEmail(nick) {
 
 let fb = null;
 
+// Dev only: http://localhost:<port>/?emulator=1 talks to the local Firebase emulators (see firebase.json)
+// instead of the live project. Never on a real host; separate app name + memory cache, so the live
+// session and offline cache on localhost are untouched.
+const useEmulator = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
+  && new URLSearchParams(location.search).get('emulator') === '1';
+
+function connectEmulator(app, auth, fs) {
+  const firebaseApp = app.initializeApp({ ...firebaseConfig, apiKey: 'demo-key', projectId: 'demo-mec' }, 'emulator');
+  const a = auth.getAuth(firebaseApp);
+  auth.connectAuthEmulator(a, 'http://127.0.0.1:9774', { disableWarnings: true });
+  const db = fs.initializeFirestore(firebaseApp, { localCache: fs.memoryLocalCache() });
+  fs.connectFirestoreEmulator(db, '127.0.0.1', 8784);
+  document.title = `[EMULATOR] ${document.title}`;
+  console.warn('[mec] using the local Firebase emulators');
+  return { auth: a, db, A: auth, F: fs };
+}
+
 export async function loadCloud() {
   if (fb) return fb;
   const [app, auth, fs] = await Promise.all([
@@ -32,6 +49,7 @@ export async function loadCloud() {
     import(`${SDK}/firebase-auth.js`),
     import(`${SDK}/firebase-firestore.js`),
   ]);
+  if (useEmulator) return (fb = connectEmulator(app, auth, fs));
   const firebaseApp = app.initializeApp(firebaseConfig);
   let db;
   try {
