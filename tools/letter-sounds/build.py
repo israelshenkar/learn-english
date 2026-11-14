@@ -22,16 +22,17 @@ SR = 22050
 
 # letter -> (IPA given to the voice, kind)
 #   cont : continuant, kept whole (tripled letters make the voice hold the sound)
+#   long : a single continuant, slowed down about 3x (for f/v the tripled form stutters)
 #   vowel: short vowel, kept whole
 #   stop : consonant + schwa; the schwa is cut short so it sounds like "b" not "buh"
 # Plain ASCII "g" and "r" are used because the voice returns silence for IPA ɡ / ɹ on their own.
 SOUNDS = {
     'a': ('æ', 'vowel'),   'b': ('bə', 'stop'),  'c': ('kə', 'stop'),  'd': ('də', 'stop'),
-    'e': ('ɛ', 'vowel'),   'f': ('fff', 'cont'), 'g': ('gə', 'stop'),  'h': ('hə', 'stop'),
+    'e': ('ɛ', 'vowel'),   'f': ('f', 'long'), 'g': ('gə', 'stop'),  'h': ('hə', 'stop'),
     'i': ('ɪ', 'vowel'),   'j': ('dʒə', 'stop'), 'k': ('kə', 'stop'),  'l': ('lll', 'cont'),
     'm': ('mmm', 'cont'),  'n': ('nnn', 'cont'), 'o': ('ɑ', 'vowel'),  'p': ('pə', 'stop'),
     'q': ('kw', 'cont'),   'r': ('rrr', 'cont'), 's': ('sss', 'cont'), 't': ('tə', 'stop'),
-    'u': ('ʌ', 'vowel'),   'v': ('vvv', 'cont'), 'w': ('wə', 'stop'),  'x': ('ks', 'cont'),
+    'u': ('ʌ', 'vowel'),   'v': ('v', 'long'), 'w': ('wə', 'stop'),  'x': ('ks', 'cont'),
     'y': ('jə', 'stop'),   'z': ('zzz', 'cont'),
 }
 
@@ -90,7 +91,12 @@ def main():
         subprocess.run([tool, 'Samantha', tmp, *pairs], check=True, stdout=subprocess.DEVNULL)
         total = 0
         for k, (ipa, kind) in SOUNDS.items():
-            y = trim(load(os.path.join(tmp, f'{k}.caf')), kind)
+            src = os.path.join(tmp, f'{k}.caf')
+            if kind == 'long':  # time-stretch (pitch kept) so the sound lasts long enough to hear
+                slow = os.path.join(tmp, f'{k}-slow.wav')
+                subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', 'atempo=0.5,atempo=0.6', slow], check=True)
+                src = slow
+            y = trim(load(src), kind)
             dest = os.path.join(OUT, f'{k}.mp3')
             subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'f32le', '-ar', str(SR), '-ac', '1', '-i', '-',
                             '-codec:a', 'libmp3lame', '-b:a', '48k', dest],
