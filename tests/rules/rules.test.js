@@ -6,7 +6,7 @@ import { test, before, after, beforeEach } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, writeBatch, serverTimestamp, query, where,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, writeBatch, serverTimestamp, query, where, deleteField,
 } from 'firebase/firestore';
 
 let env;
@@ -140,6 +140,11 @@ test('only the member writes their own summary, with a fixed shape', async () =>
   await assertFails(updateDoc(ref('kid'), { active7: 8 }));
   await assertFails(updateDoc(ref('kid'), { stars: Object.fromEntries(Array.from({ length: 41 }, (_, i) => [`u${i}`, 1])) }));
   await assertFails(updateDoc(ref('kid'), { joinCode: 'BBBBBB' }));    // can't change how you joined
+  // the app's sync drops optional fields it no longer has
+  await assertSucceeds(updateDoc(ref('kid'), { points: 60, mastered: deleteField(), lastActive: deleteField() }));
+  // ...but can't drop required ones
+  await assertFails(updateDoc(ref('kid'), { nick: deleteField() }));
+  await assertFails(updateDoc(ref('kid'), { joinCode: deleteField() }));
 });
 
 test('members leave; only the owner removes others', async () => {

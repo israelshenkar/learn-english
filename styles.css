@@ -458,6 +458,7 @@ a { color: inherit; }
 .rp-bar-col i { display: block; width: min(70%, 26px); background: var(--blue); border-radius: 4px 4px 0 0; }
 .rp-bar.only-played .rp-bar-col i { background: repeating-linear-gradient(45deg, var(--blue) 0 3px, transparent 3px 6px); border: 1px solid var(--blue); }
 .rp-bar-day { font-size: .68rem; color: var(--ink-soft); text-align: center; line-height: 1.15; }
+.rp-bar-min { font-size: .7rem; font-weight: 600; min-height: 1.1em; direction: ltr; }
 .rp-bar:hover .rp-bar-col i, .rp-bar:focus-visible .rp-bar-col i { background: var(--ink); }
 .rp-scroll { overflow-x: auto; }
 .rp-table { border-collapse: collapse; width: 100%; font-size: .95rem; }

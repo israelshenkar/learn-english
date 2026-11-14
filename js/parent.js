@@ -19,10 +19,11 @@ function activityChart(days) {
     return h('li', { class: `rp-bar ${d.rounds ? '' : d.played ? 'only-played' : 'idle'}`, title: label, tabindex: 0, 'aria-label': label },
       h('span', { class: 'rp-bar-val' }, d.rounds || ''),
       h('span', { class: 'rp-bar-col' }, h('i', { style: { height: `${height}%` } })),
-      h('span', { class: 'rp-bar-day' }, d.weekday, h('br'), d.dayNum, h('span', { class: 'rp-bar-month' }, `/${d.month}`)));
+      h('span', { class: 'rp-bar-day' }, d.weekday, h('br'), d.dayNum, h('span', { class: 'rp-bar-month' }, `/${d.month}`)),
+      h('span', { class: 'rp-bar-min' }, d.rounds ? (d.secs < 60 ? '<1′' : `${Math.round(d.secs / 60)}′`) : ''));
   });
   return h('figure', { class: 'rp-chart' },
-    h('figcaption', {}, 'סבבי משחק בכל יום – 14 הימים האחרונים'),
+    h('figcaption', {}, 'סבבי משחק בכל יום – 14 הימים האחרונים. ', h('small', {}, 'המספר מעל העמודה = סבבים · המספר בתחתית = דקות משחק משוערות')),
     h('ol', { class: 'rp-bars' }, bars),
     days.some(d => d.played && !d.detailed) && h('p', { class: 'hint small' },
       'עמודה נמוכה ומקווקוות = יום שבו נכנסו לאתר לפני שהתחלנו לרשום פירוט יומי.'));

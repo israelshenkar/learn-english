@@ -73,23 +73,52 @@ export async function myGroups() {
 
 let lastSync = 0;
 let syncing = null;
+let trailing = null;
+const SYNC_GAP = 20_000; // ms between summary writes
 
 // Push this player's summary to every group they're in. Cheap no-op when they have no groups.
 export function syncSummaries({ force = false } = {}) {
   const user = store.currentUser();
   if (!user) return Promise.resolve();
-  if (!force && Date.now() - lastSync < 20_000) return syncing || Promise.resolve();
+  const wait = SYNC_GAP - (Date.now() - lastSync);
+  if (!force && wait > 0) {
+    // Throttled: still send the latest progress once the gap has passed.
+    trailing ||= setTimeout(() => { trailing = null; syncSummaries(); }, wait);
+    return syncing || Promise.resolve();
+  }
+  clearTimeout(trailing);
+  trailing = null;
   lastSync = Date.now();
   syncing = (async () => {
     if (cachedFor !== user.uid) myGroupIds = null;
-    const ids = myGroupIds ?? await readMembership().catch(() => { cachedFor = user.uid; return (myGroupIds = []); });
+    let ids = myGroupIds;
+    if (!ids) {
+      try { ids = await readMembership(); }
+      catch (e) {
+        // Only "groups not enabled" is remembered; after a network error we simply try again next round.
+        if (e instanceof GroupsUnavailable) { myGroupIds = []; cachedFor = user.uid; }
+        return;
+      }
+    }
     if (!ids.length) return;
     const { F, db } = await fs();
     const summary = groupSummary(user);
     for (const k of ['mastered', 'lastActive']) if (!(k in summary)) summary[k] = F.deleteField(); // drop stale values
-    const gone = [];
+    const suspect = [];
     await Promise.all(ids.map(gid => F.updateDoc(F.doc(db, 'groups', gid, 'members', user.uid), summary)
-      .catch(e => { if (denied(e) || e?.code === 'not-found') gone.push(gid); })));
+      .catch(e => {
+        if (denied(e) || e?.code === 'not-found') suspect.push(gid);
+        else console.warn('[mec] group summary sync failed', gid, e);
+      })));
+    // A refused write alone might be a rules/shape problem, so only forget groups we really can't see any more.
+    const gone = [];
+    await Promise.all(suspect.map(async gid => {
+      try {
+        const snap = await F.getDoc(F.doc(db, 'groups', gid));
+        if (!snap.exists()) gone.push(gid);
+        else console.warn('[mec] group summary refused although still a member', gid);
+      } catch (e) { if (denied(e)) gone.push(gid); }
+    }));
     await forget(gone);
   })().catch(err => console.warn('[mec] group summary sync failed', err));
   return syncing;
