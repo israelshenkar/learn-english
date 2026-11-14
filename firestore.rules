@@ -15,5 +15,91 @@ service cloud.firestore {
         && request.resource.data.avatar is string && request.resource.data.avatar.size() <= 16
         && request.resource.data.points is int && request.resource.data.trophies is int;
     }
+
+    // ---- Private groups (a family or a class) ----------------------------------------------
+    function signedIn() { return request.auth != null; }
+    function groupPath(gid) { return /databases/$(database)/documents/groups/$(gid); }
+    function codePath(code) { return /databases/$(database)/documents/groupCodes/$(code); }
+    function isCode(c) { return c is string && c.matches('^[A-HJ-NP-Z2-9]{6}$'); }
+
+    // Which groups I'm in (so the app can find them on any device). Only I can see it.
+    match /memberships/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['groups'])
+        && request.resource.data.groups is list && request.resource.data.groups.size() <= 20;
+    }
+
+    // Join codes. You can look up one code you were given, but never list them, so groups can't be enumerated.
+    // A code doc is created together with (or while changing) its group's code, by the group's owner only.
+    match /groupCodes/{code} {
+      allow get: if signedIn();
+      allow list, update: if false;
+      allow create: if signedIn() && isCode(code)
+        && request.resource.data.keys().hasOnly(['groupId', 'name', 'ownerNick'])
+        && request.resource.data.groupId is string
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.ownerNick is string && request.resource.data.ownerNick.size() <= 16
+        && getAfter(groupPath(request.resource.data.groupId)).data.ownerUid == request.auth.uid
+        && getAfter(groupPath(request.resource.data.groupId)).data.code == code;
+      allow delete: if signedIn()
+        && get(groupPath(resource.data.groupId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /groups/{gid} {
+      function isMember() {
+        return signedIn() && exists(/databases/$(database)/documents/groups/$(gid)/members/$(request.auth.uid));
+      }
+      function isOwner() { return signedIn() && get(groupPath(gid)).data.ownerUid == request.auth.uid; }
+
+      // The group doc holds the current join code, so only members may read it.
+      allow read: if isMember();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['name', 'code', 'ownerUid', 'ownerNick', 'created'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 30
+        && request.resource.data.ownerNick is string && request.resource.data.ownerNick.size() <= 16
+        && request.resource.data.created == request.time
+        && isCode(request.resource.data.code)
+        && getAfter(codePath(request.resource.data.code)).data.groupId == gid
+        && existsAfter(/databases/$(database)/documents/groups/$(gid)/members/$(request.auth.uid));
+      // The owner may only change the join code (e.g. after removing someone), and the new code doc must point here.
+      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['code'])
+        && isCode(request.resource.data.code)
+        && getAfter(codePath(request.resource.data.code)).data.groupId == gid;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+
+      // Each member's small public-to-the-group summary. Never the full users/{uid} doc.
+      match /members/{uid} {
+        function validSummary() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['nick', 'avatar', 'points', 'stars', 'learned', 'mastered', 'rounds',
+                                   'active7', 'lastActive', 'joined', 'joinCode'])
+            && d.keys().hasAll(['nick', 'avatar', 'points', 'joined', 'joinCode'])
+            && d.nick is string && d.nick.size() <= 16
+            && d.avatar is string && d.avatar.size() <= 16
+            && d.points is int && d.points >= 0
+            && (!('stars' in d) || (d.stars is map && d.stars.size() <= 40))
+            && (!('learned' in d) || d.learned is int)
+            && (!('mastered' in d) || d.mastered is int)
+            && (!('rounds' in d) || d.rounds is int)
+            && (!('active7' in d) || (d.active7 is int && d.active7 >= 0 && d.active7 <= 7))
+            && (!('lastActive' in d) || (d.lastActive is string && d.lastActive.size() <= 10))
+            && d.joined is timestamp;
+        }
+        allow read: if isMember();
+        // Joining needs the group's CURRENT code (knowing the group id alone is not enough).
+        allow create: if signedIn() && request.auth.uid == uid && validSummary()
+          && request.resource.data.joined == request.time
+          && request.resource.data.joinCode == getAfter(groupPath(gid)).data.code;
+        allow update: if signedIn() && request.auth.uid == uid && validSummary()
+          && request.resource.data.joinCode == resource.data.joinCode
+          && request.resource.data.joined == resource.data.joined;
+        // Leave (yourself) or be removed by the owner. Self-check first, so leaving works even if the group is gone.
+        allow delete: if signedIn() && (request.auth.uid == uid || isOwner());
+      }
+    }
   }
 }
