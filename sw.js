@@ -92,7 +92,11 @@ const timeout = ms => new Promise((_, reject) => setTimeout(() => reject(new Err
 async function networkFirst(event) {
   const req = event.request;
   const cache = await caches.open(SHELL);
-  const net = fetch(req).then(res => {
+  // GitHub Pages sends max-age=600, so a plain fetch could hand back a 10-minute-old copy of one module next
+  // to a fresh copy of another (after a deploy: new app.js + old data.js = missing export = blank page).
+  // 'no-cache' revalidates every file with the server (a cheap 304 when unchanged). Navigations keep the
+  // plain fetch: a navigate-mode Request can't take an init, and stale HTML only lists the same module URLs.
+  const net = (req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' })).then(res => {
     if (res.status === 200 && res.type === 'basic') event.waitUntil(cache.put(req, res.clone()));
     return res;
   });
