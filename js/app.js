@@ -6,6 +6,7 @@ import { h, en, toast, confetti, starsRow, sfx } from './ui.js';
 import { canSpeak } from './speech.js';
 import * as mastery from './mastery.js';
 import { REVIEW_UNIT, REVIEW_GAME, runReview, reviewCard, masteryGrid } from './review.js';
+import { ABC_UNIT, ABC_GAME, runAbc, markAbcDone, runWarmup, abcCard } from './abc.js';
 import * as rewards from './rewards.js';
 import { shopScreen } from './shop.js';
 import { logRound } from './report.js';
@@ -32,6 +33,7 @@ function render() {
   if ((m = hash.match(/^#\/play\/([\w-]+)\/(\w+)$/))) return playScreen(user, m[1], m[2]);
   if (hash === '#/trophies') return trophiesScreen(user);
   if (hash === '#/review') return playScreen(user, REVIEW_UNIT.id, 'review');
+  if (hash === '#/abc') return playScreen(user, ABC_UNIT.id, 'abc');
   if (hash === '#/shop') return shopScreen(user, { mount, topbar, announceTrophies });
   if (hash === '#/progress') return progressScreen(user, kit);
   if (hash === '#/groups') return groupsScreen(user, kit);
@@ -202,6 +204,7 @@ function homeScreen(user) {
     h('p', { class: 'lead' }, 'בחרו שלב במסלול. כל שלב נפתח כשאוספים חצי מהכוכבים בשלב שלפניו.'),
     !canSpeak && h('p', { class: 'warn' }, 'הדפדפן הזה לא יכול להשמיע קול – חלק מהמשחקים יעבדו בלי שמע.'),
     reviewCard(p),
+    abcCard(p),
     rewards.todayCard(p),
     h('ol', { class: 'path' }, UNITS.map((u, i) => {
       const open = store.unitUnlocked(p, i);
@@ -245,12 +248,19 @@ function unitScreen(user, unitId) {
 }
 
 // ---------------------------------------------------------------------------
+const SPECIAL_ROUNDS = {
+  [REVIEW_UNIT.id]: { unit: REVIEW_UNIT, game: REVIEW_GAME, run: runReview },
+  [ABC_UNIT.id]: { unit: ABC_UNIT, game: ABC_GAME, run: runAbc, onFinish: markAbcDone },
+};
+
 function playScreen(user, unitId, gameId) {
-  const review = unitId === REVIEW_UNIT.id; // daily review: a mixed round, no stars
+  // Special daily rounds (the review, the letters of the day): mixed rounds outside the stages, no stars.
+  const special = SPECIAL_ROUNDS[unitId];
+  const review = !!special;
   const idx = UNITS.findIndex(u => u.id === unitId);
-  const unit = review ? REVIEW_UNIT : UNITS[idx];
+  const unit = review ? special.unit : UNITS[idx];
   if (!review && (!unit || !unit.games.includes(gameId) || !store.unitUnlocked(user.progress, idx))) return go('#/');
-  const meta = review ? REVIEW_GAME : GAMES[gameId];
+  const meta = review ? special.game : GAMES[gameId];
   const root = h('div', { class: 'game' });
   mount(topbar(user, { back: review ? '#/' : `#/unit/${unit.id}` }), h('main', { class: 'play', style: { '--c': unit.color } },
     h('h1', { class: 'play-title', tabindex: -1 }, h('span', { 'aria-hidden': 'true' }, meta.icon), ' ', meta.title,
@@ -294,6 +304,7 @@ function playScreen(user, unitId, gameId) {
       const u = store.update(pr => {
         reward = rewards.onRound(pr, res);
         if (!review) pr.stars[key] = Math.max(pr.stars[key] || 0, res.stars);
+        special?.onFinish?.(pr);
         pr.points += res.points;
         pr.stats.rounds++;
         if (!res.learn && !res.wrong && res.total) pr.stats.perfect++;
@@ -311,7 +322,8 @@ function playScreen(user, unitId, gameId) {
       showResults(user, unit, gameId, res, { fresh, newUnit: after > before ? UNITS[after - 1] : null, prevBest, reward });
     },
   };
-  if (review) runReview(root, api, store.currentUser().progress);
+  if (review) special.run(root, api, store.currentUser().progress);
+  else if (gameId === 'warmup') runWarmup(root, unit, api);
   else runGame(gameId, root, unit, api);
 }
 

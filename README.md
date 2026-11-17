@@ -16,6 +16,8 @@ A game-style site for Hebrew speakers learning English from zero. It is fully st
 - **Trophies:** 22 trophies, defined in `js/trophies.js`.
 - **Adaptive practice:** every answer is recorded per item (letter or word) and skill: recognise, write, spell, say. Rounds pick items that were never practiced first, then recent mistakes, then the longest unseen, with a little randomness. This way every letter A–Z comes up within a few rounds. Each unit page shows a grid of its items as not started, practicing or mastered. An item is mastered when it has passed every skill tested by the unit's non-bonus games.
 - **Daily review (חזרה יומית):** a home-screen card starts a mixed round of up to 8 practiced items whose review date has come. After a correct answer, the next review is 1, 3, 7 and then 14 days later; a mistake brings the item back today. The round earns points and counts toward the day streak, but gives no unit stars.
+- **Letters of the day (אותיות היום):** a home-screen card with 2 letters a day (`#/abc`): an 8-question round (hear big, hear small, big→small, which word has it). The pair moves on the day after it's done, so all 26 letters come round every 13 practice days, rarest first (Q, Z, J, X…). Stored in `progress.abc`; no stars, counts toward the daily goal.
+- **Letters warm-up (חימום אותיות):** a bonus game opening every stage after the ABC, on 3 letters that stage's words don't use, moving on daily, so each stage meets the whole alphabet. Answers from both feed the ABC stage's mastery and review. Logic in `js/abc.js`.
 - **Daily goal & streak:** 3 rounds a day is the daily goal (ring on the home screen and around the 🔥 in the top bar). The 🔥 day streak counts days the goal was met; a streak freeze from the shop covers a missed day.
 - **Coins & shop:** 1 🪙 per star earned in a round, +10 for meeting the daily goal. The shop (`#/shop`) sells extra avatars, notebook themes and streak freezes. Logic lives in `js/rewards.js` and `js/shop.js`.
 - **Accounts:** a nickname, an avatar (36 free ones: 12 shown at sign-up, the rest fold out) and a password of at least 6 characters, with no email needed. Progress is saved to Firebase, so a player can continue on any device.
@@ -125,6 +127,7 @@ The loading screen is plain HTML in `index.html`, so it paints before any JavaSc
 - `js/trophies.js`: trophy rules.
 - `js/mastery.js`: per-item results (`progress.items[unitId][key]`), mastery, adaptive item choice and review due dates. These are pure functions with no DOM.
 - `js/review.js`: the daily review round, the home review card and the unit mastery grid.
+- `js/abc.js`: letters of the day and the per-stage letters warm-up.
 - `js/rewards.js`: daily goal, day streak, coins, streak freezes and notebook themes.
 - `js/shop.js`: the shop screen (`#/shop`).
 - `js/report.js`: progress metrics for adults and the per-day log (`progress.dayLog`).

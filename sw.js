@@ -19,7 +19,7 @@ const SHELL_FILES = [
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'js/app.js', 'js/data.js', 'js/store.js', 'js/cloud.js', 'js/games.js', 'js/ui.js', 'js/speech.js',
   'js/trophies.js', 'js/account.js', 'js/recovery.js', 'js/nickfilter.js', 'js/pwa.js',
-  'js/mastery.js', 'js/review.js', 'js/rewards.js', 'js/shop.js', 'js/report.js', 'js/parent.js', 'js/groups.js', 'js/games-extra.js', 'js/data-extra.js', 'js/phonics.js',
+  'js/mastery.js', 'js/review.js', 'js/rewards.js', 'js/shop.js', 'js/report.js', 'js/parent.js', 'js/groups.js', 'js/games-extra.js', 'js/data-extra.js', 'js/phonics.js', 'js/abc.js',
 ];
 const CDN_FILES = ['app', 'auth', 'firestore'].map(n => `${FIREBASE}/firebase-${n}.js`);
 

@@ -203,6 +203,7 @@ export const GAMES = {
   pick:   { title: 'מה זה באנגלית?',     icon: '🎯', desc: 'רואים תמונה ובוחרים מילה' },
   spell:  { title: 'מאייתים',           icon: '🧩', desc: 'בונים את המילה מאותיות' },
   say:    { title: 'אומרים בקול',        icon: '🎤', desc: 'אומרים את המילה למיקרופון', bonus: true },
+  warmup: { title: 'חימום אותיות',      icon: '🔤', desc: 'אותיות שלא מופיעות במילים של השלב', bonus: true },
   ...EXTRA_GAMES,
 };
 
@@ -214,7 +215,8 @@ export const UNITS = [
   ...[...WORD_UNITS, ...EXTRA_WORD_UNITS].map(u => ({ ...u, subtitle: 'מילים יומיומיות', kind: 'words', items: u.words,
     games: u.games || ['learn', 'pick', 'listen', 'spell', 'say'] })),
   SENTENCE_UNIT,
-];
+// Every stage after the ABC opens with a bonus letters warm-up on the letters its words don't use (js/abc.js).
+].map(u => (u.kind === 'letters' ? u : { ...u, games: ['warmup', ...u.games] }));
 
 // Free avatars. The first FIRST_AVATARS show up front in the sign-up picker; the rest fold out.
 // Single-codepoint emoji only (the leaderboard and group rows keep the avatar as one short string).
